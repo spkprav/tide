@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0" stop-color="#22243B"/>
+      <stop offset="1" stop-color="#13141B"/>
+    </linearGradient>
+    <linearGradient id="wave1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7DCFFF"/>
+      <stop offset="0.55" stop-color="#7AA2F7"/>
+      <stop offset="1" stop-color="#3D59C8"/>
+    </linearGradient>
+    <linearGradient id="wave2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#73DACA"/>
+      <stop offset="1" stop-color="#4F76C0"/>
+    </linearGradient>
+    <linearGradient id="wave3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#BB9AF7"/>
+      <stop offset="1" stop-color="#5A4AB0"/>
+    </linearGradient>
+    <radialGradient id="moonGlow" cx="0.7" cy="0.3" r="0.4">
+      <stop offset="0" stop-color="#F7D794" stop-opacity="0.5"/>
+      <stop offset="0.55" stop-color="#F7D794" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#F7D794" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="moonFill" cx="0.45" cy="0.4" r="0.7">
+      <stop offset="0" stop-color="#FCE9B5"/>
+      <stop offset="0.7" stop-color="#F7D794"/>
+      <stop offset="1" stop-color="#E0B864"/>
+    </radialGradient>
+    <clipPath id="clipCircle">
+      <circle cx="512" cy="512" r="450"/>
+    </clipPath>
+  </defs>
+
+  <!-- Base circle fill -->
+  <circle cx="512" cy="512" r="450" fill="url(#bg)"/>
+
+  <!-- All content clipped inside circle -->
+  <g clip-path="url(#clipCircle)">
+    <!-- Moon glow -->
+    <rect x="0" y="0" width="1024" height="1024" fill="url(#moonGlow)"/>
+
+    <!-- Stars -->
+    <circle cx="200" cy="200" r="2.5" fill="#C0CAF5" opacity="0.75"/>
+    <circle cx="320" cy="160" r="1.8" fill="#C0CAF5" opacity="0.55"/>
+    <circle cx="450" cy="220" r="2.2" fill="#C0CAF5" opacity="0.65"/>
+    <circle cx="180" cy="320" r="1.8" fill="#C0CAF5" opacity="0.5"/>
+    <circle cx="380" cy="380" r="2.6" fill="#C0CAF5" opacity="0.7"/>
+    <circle cx="540" cy="160" r="1.6" fill="#C0CAF5" opacity="0.5"/>
+    <circle cx="860" cy="200" r="2" fill="#C0CAF5" opacity="0.6"/>
+
+    <!-- Moon -->
+    <circle cx="720" cy="290" r="64" fill="url(#moonFill)"/>
+    <circle cx="700" cy="278" r="9" fill="#E0B864" opacity="0.6"/>
+    <circle cx="735" cy="305" r="6" fill="#E0B864" opacity="0.5"/>
+    <circle cx="715" cy="320" r="4" fill="#E0B864" opacity="0.4"/>
+
+    <!-- Horizon faint -->
+    <rect x="0" y="540" width="1024" height="1.5" fill="#414868" opacity="0.45"/>
+
+    <!-- Back wave (purple) -->
+    <path d="M -50 600
+             C 160 530, 320 680, 480 600
+             S 800 680, 1100 580
+             L 1100 1080 L -50 1080 Z"
+          fill="url(#wave3)" opacity="0.60"/>
+
+    <!-- Mid wave (teal) -->
+    <path d="M -50 720
+             C 180 640, 360 800, 540 700
+             S 880 800, 1100 720
+             L 1100 1080 L -50 1080 Z"
+          fill="url(#wave2)" opacity="0.82"/>
+
+    <!-- Front wave -->
+    <path d="M -50 840
+             C 180 750, 380 920, 580 810
+             S 880 920, 1100 830
+             L 1100 1080 L -50 1080 Z"
+          fill="url(#wave1)"/>
+
+    <!-- Crest highlights -->
+    <path d="M -50 840
+             C 180 750, 380 920, 580 810
+             S 880 920, 1100 830"
+          fill="none" stroke="#C0CAF5" stroke-width="5" stroke-linecap="round" opacity="0.55"/>
+    <path d="M -50 720
+             C 180 640, 360 800, 540 700
+             S 880 800, 1100 720"
+          fill="none" stroke="#9ECE6A" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+
+    <!-- Foam dots -->
+    <circle cx="240" cy="800" r="6" fill="#C0CAF5" opacity="0.85"/>
+    <circle cx="320" cy="850" r="4" fill="#C0CAF5" opacity="0.7"/>
+    <circle cx="640" cy="800" r="5" fill="#C0CAF5" opacity="0.8"/>
+    <circle cx="780" cy="860" r="4" fill="#C0CAF5" opacity="0.7"/>
+    <circle cx="900" cy="830" r="6" fill="#C0CAF5" opacity="0.85"/>
+    <circle cx="120" cy="860" r="3.5" fill="#C0CAF5" opacity="0.6"/>
+
+    <!-- Moon reflection on water -->
+    <ellipse cx="720" cy="855" rx="48" ry="6" fill="#F7D794" opacity="0.32"/>
+    <ellipse cx="720" cy="868" rx="34" ry="3" fill="#F7D794" opacity="0.22"/>
+    <ellipse cx="720" cy="880" rx="22" ry="2" fill="#F7D794" opacity="0.15"/>
+  </g>
+
+  <!-- Outer ring -->
+  <circle cx="512" cy="512" r="450" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.08"/>
+  <circle cx="512" cy="512" r="448" fill="none" stroke="#000000" stroke-width="1" opacity="0.25"/>
+</svg>
