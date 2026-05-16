@@ -690,12 +690,23 @@ final class TerminalDelegate: NSObject, @preconcurrency LocalProcessTerminalView
 
     func setTerminalTitle(source: LocalProcessTerminalView, title: String) {
         guard !title.isEmpty else { return }
-        session?.setTitleAnywhere(sessionID: sessionID, title: title)
+        let sid = sessionID
+        let s = session
+        Task { @MainActor in
+            s?.setTitleAnywhere(sessionID: sid, title: title)
+        }
     }
 
     nonisolated func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}
 
     func processTerminated(source: TerminalView, exitCode: Int32?) {
-        session?.removeTerminalAnywhere(sessionID: sessionID)
+        let sid = sessionID
+        let s = session
+        // Defer to next runloop tick so SwiftTerm can finish unwinding before
+        // we drop our reference to the terminal view. Without this, the view
+        // can be released mid-callback and the whole pane tree goes blank.
+        Task { @MainActor in
+            s?.removeTerminalAnywhere(sessionID: sid)
+        }
     }
 }

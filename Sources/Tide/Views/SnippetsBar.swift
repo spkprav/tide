@@ -6,12 +6,43 @@ struct SnippetsBar: View {
     @Environment(ProjectStore.self) private var projectStore
 
     @State private var input: String = ""
-    @State private var showSnippets = false
     @State private var showAdd = false
+    @State private var hoveredSnippet: UUID?
     @FocusState private var inputFocused: Bool
 
     var body: some View {
-        HStack(spacing: 8) {
+        VStack(spacing: 8) {
+            // Row 1 — chip pills for relevant snippets + "Save current"
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(relevantSnippets) { snippet in
+                        SnippetChip(
+                            snippet: snippet,
+                            hover: hoveredSnippet == snippet.id,
+                            onPick: { send(text: snippet.command, appendNewline: true) },
+                            onRemove: { snippetStore.remove(id: snippet.id) }
+                        )
+                        .onHover { hoveredSnippet = $0 ? snippet.id : nil }
+                    }
+                    Button {
+                        showAdd = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus").font(.system(size: 9, weight: .bold))
+                            Text(input.trimmingCharacters(in: .whitespaces).isEmpty ? "Save snippet" : "Save current")
+                                .font(.system(size: 11))
+                        }
+                    }
+                    .buttonStyle(TideChipButton(tint: SwiftUI.Color.tnBlue))
+                    .help(input.trimmingCharacters(in: .whitespaces).isEmpty
+                          ? "Save a new snippet" : "Save current input as a snippet")
+                }
+                .padding(.horizontal, 2)
+            }
+            .frame(maxHeight: relevantSnippets.isEmpty && input.isEmpty ? 0 : 28)
+            .opacity(relevantSnippets.isEmpty && input.isEmpty ? 0 : 1)
+
+            // Row 2 — input
             HStack(spacing: 8) {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .bold))
@@ -25,7 +56,7 @@ struct SnippetsBar: View {
                     .onSubmit(sendInput)
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.vertical, 7)
             .background(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .fill(SwiftUI.Color.tnBg3)
@@ -34,42 +65,9 @@ struct SnippetsBar: View {
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .strokeBorder(inputFocused ? SwiftUI.Color.tnBlue : SwiftUI.Color.tnLine, lineWidth: 1)
             )
-
-            Button {
-                showSnippets.toggle()
-            } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: "bookmark.fill").font(.system(size: 10))
-                    Text("Snippets").font(.system(size: 11, weight: .medium))
-                    Text("\(relevantCount)")
-                        .font(.system(size: 10))
-                        .foregroundStyle(SwiftUI.Color.tnFg3)
-                }
-            }
-            .buttonStyle(TideChipButton())
-            .popover(isPresented: $showSnippets, arrowEdge: .bottom) {
-                SnippetsPopover(
-                    snippets: relevantSnippets,
-                    onPick: { snippet in
-                        send(text: snippet.command, appendNewline: true)
-                        showSnippets = false
-                    },
-                    onRemove: { snippetStore.remove(id: $0) },
-                    onAdd: { showAdd = true; showSnippets = false }
-                )
-            }
-
-            Button {
-                showAdd = true
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 11, weight: .semibold))
-            }
-            .buttonStyle(TideChipButton(tint: SwiftUI.Color.tnBlue))
-            .help("Add snippet from current input")
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 7)
+        .padding(.vertical, 8)
         .background(SwiftUI.Color.tnBg2)
         .overlay(alignment: .top) {
             Rectangle()
@@ -108,6 +106,49 @@ struct SnippetsBar: View {
     }
 }
 
+struct SnippetChip: View {
+    let snippet: Snippet
+    let hover: Bool
+    let onPick: () -> Void
+    let onRemove: () -> Void
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Text(snippet.name.isEmpty ? snippet.command : snippet.name)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(SwiftUI.Color.tnFg2)
+                .lineLimit(1)
+            if !snippet.isGlobal {
+                Circle()
+                    .fill(SwiftUI.Color.tnBlue)
+                    .frame(width: 5, height: 5)
+            }
+            if hover {
+                Button(action: onRemove) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(SwiftUI.Color.tnFg3)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
+        .background(
+            Capsule().fill(hover ? SwiftUI.Color.tnBg4 : SwiftUI.Color.tnBg3)
+        )
+        .overlay(
+            Capsule().strokeBorder(hover ? SwiftUI.Color.tnBlue : SwiftUI.Color.tnLine, lineWidth: 1)
+        )
+        .contentShape(Capsule())
+        .onTapGesture(perform: onPick)
+        .help(snippet.command)
+    }
+}
+
+// Kept for compatibility with older callers; the popover is no longer shown
+// from the snippets bar (chips are inline) but the view is still referenced
+// from a couple of places.
 struct SnippetsPopover: View {
     let snippets: [Snippet]
     let onPick: (Snippet) -> Void

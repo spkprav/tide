@@ -18,81 +18,87 @@ struct StartupConfigSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack {
+            // Title
+            HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Startup configuration")
+                    Text("Startup configuration · \(project.name)")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(SwiftUI.Color.tnFg)
-                    Text(project.name)
-                        .font(.system(size: 11))
+                    Text(displayPath(project.expandedPath))
+                        .font(.system(size: 11, design: .monospaced))
                         .foregroundStyle(SwiftUI.Color.tnFg3)
                 }
                 Spacer()
-                Button(action: exportConfig) {
-                    Label("Export", systemImage: "square.and.arrow.up")
-                        .font(.system(size: 11))
-                }
-                .buttonStyle(TideChipButton())
-                Button(action: importConfig) {
-                    Label("Import", systemImage: "square.and.arrow.down")
-                        .font(.system(size: 11))
-                }
-                .buttonStyle(TideChipButton())
             }
 
-            HStack(spacing: 14) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Name")
-                        .font(.system(size: 11))
-                        .foregroundStyle(SwiftUI.Color.tnFg3)
-                    TideTextField(placeholder: "default", text: $config.name)
-                }
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Layout")
-                        .font(.system(size: 11))
-                        .foregroundStyle(SwiftUI.Color.tnFg3)
-                    LayoutPicker(layout: $config.layout)
-                        .onChange(of: config.layout) { _, _ in
-                            config.ensurePaneCount()
-                        }
-                }
-            }
-
-            LayoutVisualizer(layout: config.layout, panes: config.panes)
-                .frame(height: 100)
-
-            HStack {
-                Text("Pane commands")
+            // Config name
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Configuration name")
                     .font(.system(size: 11))
                     .foregroundStyle(SwiftUI.Color.tnFg3)
-                Text("\(config.panes.count)")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(SwiftUI.Color.tnFg3)
-                    .padding(.horizontal, 6).padding(.vertical, 1)
-                    .background(Capsule().fill(SwiftUI.Color.tnBg))
-                Spacer()
+                TideTextField(placeholder: "default", text: $config.name)
             }
 
-            ScrollView {
-                VStack(spacing: 8) {
-                    ForEach(Array(config.panes.enumerated()), id: \.offset) { idx, _ in
-                        PaneEditor(
-                            position: config.layout.positionLabel(for: idx),
-                            accent: paneAccent(idx),
-                            pane: $config.panes[idx]
-                        )
+            // Layout — horizontal cards
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Layout")
+                    .font(.system(size: 11))
+                    .foregroundStyle(SwiftUI.Color.tnFg3)
+                HStack(spacing: 10) {
+                    ForEach(StartupLayout.allCases) { layout in
+                        LayoutCard(
+                            layout: layout,
+                            active: layout == config.layout
+                        ) {
+                            config.layout = layout
+                            config.ensurePaneCount()
+                        }
                     }
                 }
             }
-            .frame(minHeight: 180, maxHeight: 320)
+
+            // Pane commands — 2-col grid
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Text("Pane commands")
+                        .font(.system(size: 11))
+                        .foregroundStyle(SwiftUI.Color.tnFg3)
+                    Text("\(config.panes.count)")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(SwiftUI.Color.tnFg3)
+                        .padding(.horizontal, 6).padding(.vertical, 1)
+                        .background(Capsule().fill(SwiftUI.Color.tnBg))
+                    Spacer()
+                }
+
+                ScrollView {
+                    paneGrid
+                }
+                .frame(minHeight: 220, maxHeight: 340)
+            }
 
             Spacer(minLength: 0)
 
+            // Actions
             HStack {
+                Button(action: exportConfig) {
+                    Label("Export JSON", systemImage: "square.and.arrow.up")
+                        .font(.system(size: 11))
+                }
+                .buttonStyle(TideChipButton())
+
+                Button(action: importConfig) {
+                    Label("Import…", systemImage: "square.and.arrow.down")
+                        .font(.system(size: 11))
+                }
+                .buttonStyle(TideChipButton())
+
                 Spacer()
+
                 Button("Cancel") { dismiss() }
                     .buttonStyle(TideSecondaryButton())
                     .keyboardShortcut(.cancelAction)
+
                 Button("Save") {
                     onSave(config)
                     dismiss()
@@ -102,13 +108,34 @@ struct StartupConfigSheet: View {
             }
         }
         .padding(22)
-        .frame(width: 620, height: 700)
+        .frame(width: 780, height: 700)
         .background(SwiftUI.Color.tnBg3)
     }
 
-    private func paneAccent(_ i: Int) -> SwiftUI.Color {
+    @ViewBuilder
+    private var paneGrid: some View {
+        let columns = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
+        LazyVGrid(columns: columns, spacing: 10) {
+            ForEach(Array(config.panes.enumerated()), id: \.offset) { idx, _ in
+                PaneEditor(
+                    index: idx,
+                    position: config.layout.positionLabel(for: idx),
+                    accent: Self.paneAccent(idx),
+                    pane: $config.panes[idx]
+                )
+            }
+        }
+    }
+
+    static func paneAccent(_ i: Int) -> SwiftUI.Color {
         let palette: [SwiftUI.Color] = [.tnBlue, .tnGreen, .tnPurple, .tnOrange, .tnCyan, .tnYellow]
         return palette[i % palette.count]
+    }
+
+    private func displayPath(_ p: String) -> String {
+        let home = NSHomeDirectory()
+        if p.hasPrefix(home) { return "~" + p.dropFirst(home.count) }
+        return p
     }
 
     private func exportConfig() {
@@ -138,56 +165,123 @@ struct StartupConfigSheet: View {
     }
 }
 
-struct LayoutPicker: View {
-    @Binding var layout: StartupLayout
+struct LayoutCard: View {
+    let layout: StartupLayout
+    let active: Bool
+    let onSelect: () -> Void
 
     var body: some View {
-        Menu {
-            ForEach(StartupLayout.allCases) { l in
-                Button(l.displayName) { layout = l }
+        Button(action: onSelect) {
+            VStack(spacing: 8) {
+                LayoutPreview(layout: layout)
+                    .frame(height: 60)
+                Text(shortName(layout))
+                    .font(.system(size: 11, weight: active ? .semibold : .regular))
+                    .foregroundStyle(active ? SwiftUI.Color.tnFg : SwiftUI.Color.tnFg2)
+                    .lineLimit(1)
             }
-        } label: {
-            HStack(spacing: 6) {
-                Text(layout.displayName)
-                    .font(.system(size: 13))
-                    .foregroundStyle(SwiftUI.Color.tnFg)
-                Spacer()
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(SwiftUI.Color.tnFg3)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
+            .padding(10)
+            .frame(maxWidth: .infinity)
             .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(SwiftUI.Color.tnBg)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .strokeBorder(SwiftUI.Color.tnLine, lineWidth: 1)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(active ? SwiftUI.Color.tnBlue : SwiftUI.Color.tnLine, lineWidth: active ? 2 : 1)
             )
+            .shadow(color: active ? SwiftUI.Color.tnBlue.opacity(0.3) : .clear, radius: active ? 8 : 0)
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
+        .buttonStyle(.plain)
+    }
+
+    private func shortName(_ l: StartupLayout) -> String {
+        switch l {
+        case .singlePane:            return "Single"
+        case .grid2x2:               return "2 × 2 grid"
+        case .bigTopThreeBottom:     return "Top + 3"
+        case .leftMainRightStacked:  return "Left + stack"
+        case .rowsStacked:           return "Rows"
+        }
+    }
+}
+
+struct LayoutPreview: View {
+    let layout: StartupLayout
+
+    var body: some View {
+        GeometryReader { _ in
+            ZStack {
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(SwiftUI.Color.tnBg2)
+                content
+                    .padding(4)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch layout {
+        case .singlePane:
+            cell(0)
+        case .grid2x2:
+            VStack(spacing: 2) {
+                HStack(spacing: 2) { cell(0); cell(1) }
+                HStack(spacing: 2) { cell(2); cell(3) }
+            }
+        case .bigTopThreeBottom:
+            VStack(spacing: 2) {
+                cell(0).frame(maxHeight: .infinity)
+                HStack(spacing: 2) { cell(1); cell(2); cell(3) }
+                    .frame(maxHeight: .infinity)
+            }
+        case .leftMainRightStacked:
+            HStack(spacing: 2) {
+                cell(0).frame(maxWidth: .infinity)
+                VStack(spacing: 2) { cell(1); cell(2); cell(3) }
+                    .frame(maxWidth: .infinity)
+            }
+        case .rowsStacked:
+            VStack(spacing: 2) { cell(0); cell(1); cell(2); cell(3) }
+        }
+    }
+
+    private func cell(_ idx: Int) -> some View {
+        RoundedRectangle(cornerRadius: 2, style: .continuous)
+            .fill(StartupConfigSheet.paneAccent(idx).opacity(0.35))
     }
 }
 
 struct PaneEditor: View {
+    let index: Int
     let position: String
     let accent: SwiftUI.Color
     @Binding var pane: StartupPane
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
+            // Colored header label like mockup: "Pane 1 — server"
+            HStack(spacing: 6) {
+                Circle().fill(accent).frame(width: 8, height: 8)
+                Text("Pane \(index + 1)")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(accent)
+                if !pane.name.isEmpty {
+                    Text("— \(pane.name)")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(accent)
+                }
+                Spacer()
                 Text(position)
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(SwiftUI.Color.tnBg)
-                    .padding(.horizontal, 7).padding(.vertical, 2)
-                    .background(Capsule().fill(accent))
-                TideTextField(placeholder: "pane name (e.g. server)", text: $pane.name)
+                    .font(.system(size: 9))
+                    .foregroundStyle(SwiftUI.Color.tnFg3)
             }
-            TideTextField(placeholder: "command (e.g. bundle exec rails s)", text: $pane.command, mono: true)
+
+            TideTextField(placeholder: "name (e.g. server, tests, logs)", text: $pane.name)
+
+            CommandEditor(text: $pane.command)
+                .frame(height: 56)
         }
         .padding(10)
         .background(
@@ -196,77 +290,29 @@ struct PaneEditor: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .strokeBorder(SwiftUI.Color.tnLine, lineWidth: 1)
+                .strokeBorder(accent.opacity(0.35), lineWidth: 1)
         )
     }
 }
 
-struct LayoutVisualizer: View {
-    let layout: StartupLayout
-    let panes: [StartupPane]
+struct CommandEditor: View {
+    @Binding var text: String
+    @FocusState private var focused: Bool
 
     var body: some View {
-        GeometryReader { geo in
-            ZStack {
+        TextEditor(text: $text)
+            .scrollContentBackground(.hidden)
+            .font(.system(size: 12, design: .monospaced))
+            .foregroundStyle(SwiftUI.Color.tnFg)
+            .padding(8)
+            .background(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .fill(SwiftUI.Color.tnBg)
+            )
+            .overlay(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .strokeBorder(SwiftUI.Color.tnLine, lineWidth: 1)
-                content(in: geo.size)
-                    .padding(6)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func content(in size: CGSize) -> some View {
-        switch layout {
-        case .singlePane:
-            paneBox(0)
-        case .grid2x2:
-            VStack(spacing: 3) {
-                HStack(spacing: 3) { paneBox(0); paneBox(1) }
-                HStack(spacing: 3) { paneBox(2); paneBox(3) }
-            }
-        case .bigTopThreeBottom:
-            VStack(spacing: 3) {
-                paneBox(0).frame(maxHeight: .infinity)
-                HStack(spacing: 3) { paneBox(1); paneBox(2); paneBox(3) }
-                    .frame(maxHeight: .infinity)
-            }
-        case .leftMainRightStacked:
-            HStack(spacing: 3) {
-                paneBox(0).frame(maxWidth: .infinity)
-                VStack(spacing: 3) { paneBox(1); paneBox(2); paneBox(3) }
-                    .frame(maxWidth: .infinity)
-            }
-        case .rowsStacked:
-            VStack(spacing: 3) {
-                paneBox(0); paneBox(1); paneBox(2); paneBox(3)
-            }
-        }
-    }
-
-    private func paneLabel(_ idx: Int) -> String {
-        if idx < panes.count, !panes[idx].name.isEmpty { return panes[idx].name }
-        return layout.positionLabel(for: idx)
-    }
-
-    private func accent(_ idx: Int) -> SwiftUI.Color {
-        let palette: [SwiftUI.Color] = [.tnBlue, .tnGreen, .tnPurple, .tnOrange, .tnCyan, .tnYellow]
-        return palette[idx % palette.count]
-    }
-
-    private func paneBox(_ idx: Int) -> some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .fill(accent(idx).opacity(0.18))
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .strokeBorder(accent(idx).opacity(0.4), lineWidth: 1)
-            Text(paneLabel(idx))
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(SwiftUI.Color.tnFg)
-                .lineLimit(1)
-        }
+                    .strokeBorder(focused ? SwiftUI.Color.tnBlue : SwiftUI.Color.tnLine, lineWidth: 1)
+            )
+            .focused($focused)
     }
 }
