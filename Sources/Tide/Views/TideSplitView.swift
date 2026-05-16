@@ -69,21 +69,23 @@ struct TideSplitView<Child: View>: NSViewRepresentable {
         ids: [UUID],
         coordinator: Coordinator
     ) {
-        // Existing tagged subviews by id.
-        let existing: [UUID: TideSplitChildView] = Dictionary(
+        // Existing tagged subviews by id — typed to the same Child so the
+        // inner NSHostingView<Child> diffs SwiftUI subtrees properly (no
+        // AnyView identity churn → no terminal-view re-mount → no blank pane).
+        let existing: [UUID: TideSplitChildView<Child>] = Dictionary(
             uniqueKeysWithValues: split.arrangedSubviews.compactMap { sub in
-                guard let child = sub as? TideSplitChildView else { return nil }
+                guard let child = sub as? TideSplitChildView<Child> else { return nil }
                 return (child.childID, child)
             }
         )
 
-        var newOrder: [TideSplitChildView] = []
+        var newOrder: [TideSplitChildView<Child>] = []
         for (idx, id) in ids.enumerated() {
             if let existingChild = existing[id] {
-                existingChild.update(rootView: AnyView(makeChild(idx)))
+                existingChild.update(rootView: makeChild(idx))
                 newOrder.append(existingChild)
             } else {
-                let host = TideSplitChildView(childID: id, rootView: AnyView(makeChild(idx)))
+                let host = TideSplitChildView(childID: id, rootView: makeChild(idx))
                 newOrder.append(host)
             }
         }
@@ -91,7 +93,7 @@ struct TideSplitView<Child: View>: NSViewRepresentable {
         // Remove ones that disappeared.
         let newIDs = Set(ids)
         for sub in split.arrangedSubviews {
-            if let child = sub as? TideSplitChildView, !newIDs.contains(child.childID) {
+            if let child = sub as? TideSplitChildView<Child>, !newIDs.contains(child.childID) {
                 split.removeArrangedSubview(child)
                 child.removeFromSuperview()
             }
@@ -217,12 +219,16 @@ struct TideSplitView<Child: View>: NSViewRepresentable {
 final class TideNSSplitView: NSSplitView {}
 
 // Hosting view tagged with the SplitNode child id so we can diff across
-// updateNSView calls without recreating subviews.
-final class TideSplitChildView: NSView {
+// updateNSView calls without recreating subviews. Generic over Child so
+// NSHostingView<Child> preserves SwiftUI structural identity — assigning
+// rootView with the same concrete type lets SwiftUI diff in place instead
+// of tearing down the inner tree (which would yank the LocalProcessTerminalView
+// subview out and leave the pane blank).
+final class TideSplitChildView<Child: View>: NSView {
     let childID: UUID
-    private let hosting: NSHostingView<AnyView>
+    private let hosting: NSHostingView<Child>
 
-    init(childID: UUID, rootView: AnyView) {
+    init(childID: UUID, rootView: Child) {
         self.childID = childID
         self.hosting = NSHostingView(rootView: rootView)
         super.init(frame: .zero)
@@ -239,7 +245,7 @@ final class TideSplitChildView: NSView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
 
-    func update(rootView: AnyView) {
+    func update(rootView: Child) {
         hosting.rootView = rootView
     }
 }
