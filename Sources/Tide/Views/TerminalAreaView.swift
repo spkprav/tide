@@ -87,26 +87,20 @@ struct SplitContainerView: View {
         case .leaf(let sessionID):
             TerminalLeafView(sessionID: sessionID, tab: tab)
         case .split(let axis, let children):
-            // No .id(structureKey) here — that would tear down the WHOLE split
-            // (and all its terminals) any time the subtree shape changed,
-            // even for an unrelated pane closing inside a sibling subtree.
-            // ForEach + SplitNode.id (Identifiable) is enough to diff cleanly
-            // and keep untouched panes mounted.
-            if axis == .vertical {
-                HSplitView {
-                    ForEach(children) { child in
-                        SplitContainerView(node: child, tab: tab)
-                            .frame(minWidth: 80)
-                    }
+            // TideSplitView wraps NSSplitView so we can read + restore
+            // divider positions and absorb a closed pane's space into the
+            // adjacent neighbor. Children are tagged by SplitNode.id so the
+            // hosting views (and their terminals) are reused across diffs.
+            TideSplitView(
+                axis: axis,
+                childIDs: children.map(\.id),
+                initialFractions: tab.fractions(for: node, childCount: children.count),
+                minimumChildSize: axis == .vertical ? 80 : 60,
+                onResize: { fractions in tab.setFractions(fractions, for: node) },
+                makeChild: { idx in
+                    SplitContainerView(node: children[idx], tab: tab)
                 }
-            } else {
-                VSplitView {
-                    ForEach(children) { child in
-                        SplitContainerView(node: child, tab: tab)
-                            .frame(minHeight: 60)
-                    }
-                }
-            }
+            )
         }
     }
 }

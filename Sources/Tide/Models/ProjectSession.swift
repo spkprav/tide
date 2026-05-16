@@ -82,6 +82,30 @@ final class TabSession: Identifiable {
     @ObservationIgnored let cwd: String
     @ObservationIgnored weak var session: ProjectSession?
 
+    // Per-split fractions keyed by the parent .split SplitNode.id.
+    // Each value is the fractional width/height of each child, summing to 1.0.
+    // Missing key or wrong-length value = even split.
+    @ObservationIgnored var splitFractions: [UUID: [CGFloat]] = [:]
+
+    func fractions(for parent: SplitNode, childCount: Int) -> [CGFloat] {
+        if let f = splitFractions[parent.id], f.count == childCount {
+            return TabSession.normalize(f)
+        }
+        return Array(repeating: 1.0 / CGFloat(childCount), count: childCount)
+    }
+
+    func setFractions(_ f: [CGFloat], for parent: SplitNode) {
+        splitFractions[parent.id] = TabSession.normalize(f)
+    }
+
+    private static func normalize(_ f: [CGFloat]) -> [CGFloat] {
+        let sum = f.reduce(0, +)
+        guard sum > 0 else {
+            return Array(repeating: 1.0 / CGFloat(f.count), count: f.count)
+        }
+        return f.map { $0 / sum }
+    }
+
     init(cwd: String, id: UUID = UUID()) {
         self.id = id
         self.cwd = cwd
@@ -125,8 +149,17 @@ final class TabSession: Identifiable {
         if let parent {
             if case .split(let pAxis, var children) = parent.content {
                 if pAxis == axis {
+                    let oldFractions = fractions(for: parent, childCount: children.count)
                     children.insert(newLeaf, at: index + 1)
                     parent.content = .split(axis: pAxis, children: children)
+
+                    // Split the original leaf's slot in half to make room.
+                    var f = oldFractions
+                    let share = f[index] / 2
+                    f[index] = share
+                    f.insert(share, at: index + 1)
+                    splitFractions[parent.id] = f
+
                     if case .leaf(let sid) = newLeaf.content { activeLeafID = sid }
                     return
                 }
@@ -175,14 +208,25 @@ final class TabSession: Identifiable {
         }
 
         guard case .split(let axis, var children) = parent.content else { return false }
+        let oldFractions = fractions(for: parent, childCount: children.count)
+        let removedFraction = oldFractions[index]
         children.remove(at: index)
+
         if children.count == 1 {
+            // Collapse: parent now holds sole survivor's content directly.
+            splitFractions.removeValue(forKey: parent.id)
             parent.content = children[0].content
             updateActiveLeafToFirstLeaf(in: parent)
         } else {
+            // Adjacent neighbor absorbs removed share. Prefer left/up, fall
+            // back to right/down (index 0).
+            var newFractions = oldFractions
+            newFractions.remove(at: index)
+            let absorberIdx = index > 0 ? index - 1 : 0
+            newFractions[absorberIdx] += removedFraction
             parent.content = .split(axis: axis, children: children)
-            let neighbor = children[max(0, index - 1)]
-            updateActiveLeafToFirstLeaf(in: neighbor)
+            splitFractions[parent.id] = newFractions
+            updateActiveLeafToFirstLeaf(in: children[absorberIdx])
         }
         return true
     }
