@@ -15,103 +15,125 @@ struct StartScreen: View {
         VStack(spacing: 0) {
             Spacer()
 
-            VStack(spacing: 24) {
-                HStack(spacing: 10) {
-                    Circle()
-                        .fill(project.color)
-                        .frame(width: 14, height: 14)
-                    Text(project.name)
-                        .font(.system(size: 24, weight: .semibold))
+            VStack(spacing: 20) {
+                // Gradient icon badge — project initial.
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [project.color, SwiftUI.Color.tnPurple],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 64, height: 64)
+                        .shadow(color: project.color.opacity(0.4), radius: 16, y: 4)
+                    Text(project.name.prefix(1).uppercased())
+                        .font(.system(size: 32, weight: .bold))
+                        .foregroundStyle(.white)
                 }
 
-                Text(project.expandedPath)
-                    .font(.system(.callout, design: .monospaced))
-                    .foregroundStyle(.secondary)
+                Text(project.name)
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(SwiftUI.Color.tnFg)
+
+                statusLine
 
                 if let cfg = config {
-                    ConfigPreview(config: cfg)
-                        .padding(.top, 8)
-
-                    Button {
-                        session.start(with: cfg)
-                        tracker.recordSessionStart(projectID: project.id)
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "play.fill").font(.system(size: 13))
-                            Text("Start").font(.system(size: 15, weight: .semibold))
+                    HStack(spacing: 10) {
+                        Button {
+                            showConfigure = true
+                        } label: {
+                            Text("Configure")
                         }
-                        .padding(.horizontal, 28).padding(.vertical, 12)
-                        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(project.color))
-                        .foregroundStyle(.white)
-                    }
-                    .buttonStyle(.plain)
-                    .keyboardShortcut(.return, modifiers: [])
+                        .buttonStyle(TideSecondaryButton())
 
-                    Button {
-                        showConfigure = true
-                    } label: {
-                        Label("Edit Setup…", systemImage: "slider.horizontal.3").font(.system(size: 12))
+                        Button {
+                            session.start(with: cfg)
+                            tracker.recordSessionStart(projectID: project.id)
+                        } label: {
+                            HStack(spacing: 6) {
+                                Text("Start")
+                                Image(systemName: "return")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(SwiftUI.Color.white.opacity(0.7))
+                            }
+                        }
+                        .buttonStyle(TidePrimaryButton())
+                        .keyboardShortcut(.return, modifiers: [])
                     }
-                    .buttonStyle(.borderless)
-                    .foregroundStyle(.secondary)
+                    .padding(.top, 4)
 
                     Button {
                         session.activeTabID = DASHBOARD_TAB_ID
                     } label: {
                         Label("View Dashboard", systemImage: "chart.bar.doc.horizontal")
                             .font(.system(size: 12))
+                            .foregroundStyle(SwiftUI.Color.tnFg3)
                     }
                     .buttonStyle(.borderless)
-                    .foregroundStyle(.secondary)
+
+                    ConfigPreview(config: cfg).padding(.top, 6)
                 } else {
-                    Text("No setup configured for this project")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 8)
-
-                    Button {
-                        showConfigure = true
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "slider.horizontal.3").font(.system(size: 13))
-                            Text("Configure Setup").font(.system(size: 15, weight: .semibold))
+                    HStack(spacing: 10) {
+                        Button {
+                            session.start(with: nil)
+                            tracker.recordSessionStart(projectID: project.id)
+                        } label: {
+                            Text("Open plain shell")
                         }
-                        .padding(.horizontal, 28).padding(.vertical, 12)
-                        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(project.color))
-                        .foregroundStyle(.white)
-                    }
-                    .buttonStyle(.plain)
-                    .keyboardShortcut(.return, modifiers: [])
+                        .buttonStyle(TideSecondaryButton())
 
-                    Button {
-                        session.start(with: nil)
-                        tracker.recordSessionStart(projectID: project.id)
-                    } label: {
-                        Text("Skip — open plain shell").font(.system(size: 12))
+                        Button {
+                            showConfigure = true
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "slider.horizontal.3")
+                                    .font(.system(size: 11))
+                                Text("Configure setup")
+                            }
+                        }
+                        .buttonStyle(TidePrimaryButton())
+                        .keyboardShortcut(.return, modifiers: [])
                     }
-                    .buttonStyle(.borderless)
-                    .foregroundStyle(.secondary)
+                    .padding(.top, 4)
 
                     Button {
                         session.activeTabID = DASHBOARD_TAB_ID
                     } label: {
                         Label("View Dashboard", systemImage: "chart.bar.doc.horizontal")
                             .font(.system(size: 12))
+                            .foregroundStyle(SwiftUI.Color.tnFg3)
                     }
                     .buttonStyle(.borderless)
-                    .foregroundStyle(.secondary)
                 }
             }
 
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .underPageBackgroundColor))
+        .background(SwiftUI.Color.tnBg)
         .sheet(isPresented: $showConfigure) {
             StartupConfigSheet(project: project, existing: config) { newConfig in
                 startupStore.upsert(newConfig, for: project.id)
             }
         }
+    }
+
+    private var statusLine: some View {
+        let pathText = displayPath(project.expandedPath)
+        let paneText = config.map { "\($0.panes.count)-pane startup configured" } ?? "no setup configured"
+        return Text("\(pathText) · \(paneText)")
+            .font(.system(size: 13))
+            .foregroundStyle(SwiftUI.Color.tnFg3)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: 460)
+    }
+
+    private func displayPath(_ p: String) -> String {
+        let home = NSHomeDirectory()
+        if p.hasPrefix(home) { return "~" + p.dropFirst(home.count) }
+        return p
     }
 }
 
@@ -119,30 +141,32 @@ struct ConfigPreview: View {
     let config: StartupConfig
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 Text(config.layout.displayName)
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(SwiftUI.Color.tnFg2)
                     .padding(.horizontal, 8).padding(.vertical, 3)
-                    .background(Capsule().fill(Color.primary.opacity(0.08)))
+                    .background(Capsule().fill(SwiftUI.Color.tnBg3))
+                    .overlay(Capsule().strokeBorder(SwiftUI.Color.tnLine, lineWidth: 1))
                 Text("\(config.panes.count) panes")
                     .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(SwiftUI.Color.tnFg3)
             }
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 ForEach(Array(config.panes.enumerated()), id: \.offset) { idx, pane in
-                    HStack(spacing: 6) {
+                    HStack(spacing: 8) {
                         Image(systemName: "circle.fill")
                             .font(.system(size: 5))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(paneAccent(idx))
                         Text(pane.name.isEmpty ? config.layout.positionLabel(for: idx) : pane.name)
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(SwiftUI.Color.tnFg)
                         Text("·")
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(SwiftUI.Color.tnFg3)
                         Text(pane.command.isEmpty ? "(no command)" : pane.command)
                             .font(.system(.caption, design: .monospaced))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(SwiftUI.Color.tnFg3)
                             .lineLimit(1)
                             .truncationMode(.tail)
                     }
@@ -150,6 +174,20 @@ struct ConfigPreview: View {
             }
             .padding(.horizontal, 8)
         }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(SwiftUI.Color.tnBg2)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .strokeBorder(SwiftUI.Color.tnLine, lineWidth: 1)
+        )
         .frame(maxWidth: 460)
+    }
+
+    private func paneAccent(_ i: Int) -> SwiftUI.Color {
+        let palette: [SwiftUI.Color] = [.tnBlue, .tnGreen, .tnPurple, .tnOrange, .tnCyan, .tnYellow]
+        return palette[i % palette.count]
     }
 }

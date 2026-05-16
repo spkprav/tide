@@ -12,28 +12,41 @@ struct SnippetsBar: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: "chevron.right")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(SwiftUI.Color.tnBlue)
 
-            TextField("Type command, Enter to send to active pane", text: $input)
-                .textFieldStyle(.plain)
-                .font(.system(.body, design: .monospaced))
-                .focused($inputFocused)
-                .onSubmit(sendInput)
+                TextField("Type command, ⏎ to send to active pane · ⌘L to focus", text: $input)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundStyle(SwiftUI.Color.tnFg)
+                    .focused($inputFocused)
+                    .onSubmit(sendInput)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(SwiftUI.Color.tnBg3)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(inputFocused ? SwiftUI.Color.tnBlue : SwiftUI.Color.tnLine, lineWidth: 1)
+            )
 
             Button {
                 showSnippets.toggle()
             } label: {
-                HStack(spacing: 4) {
+                HStack(spacing: 5) {
                     Image(systemName: "bookmark.fill").font(.system(size: 10))
-                    Text("Snippets").font(.system(size: 11))
-                    Text("(\(relevantCount))")
+                    Text("Snippets").font(.system(size: 11, weight: .medium))
+                    Text("\(relevantCount)")
                         .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(SwiftUI.Color.tnFg3)
                 }
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(TideChipButton())
             .popover(isPresented: $showSnippets, arrowEdge: .bottom) {
                 SnippetsPopover(
                     snippets: relevantSnippets,
@@ -49,18 +62,18 @@ struct SnippetsBar: View {
             Button {
                 showAdd = true
             } label: {
-                Image(systemName: "plus.circle")
-                    .font(.system(size: 12))
+                Image(systemName: "plus")
+                    .font(.system(size: 11, weight: .semibold))
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(TideChipButton(tint: SwiftUI.Color.tnBlue))
             .help("Add snippet from current input")
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(.bar)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(SwiftUI.Color.tnBg2)
         .overlay(alignment: .top) {
             Rectangle()
-                .fill(Color.black.opacity(0.15))
+                .fill(SwiftUI.Color.tnLine)
                 .frame(height: 1)
         }
         .sheet(isPresented: $showAdd) {

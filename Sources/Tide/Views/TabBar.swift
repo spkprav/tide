@@ -47,35 +47,45 @@ struct TabBar: View {
             } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.tnFg3)
                     .frame(width: 28, height: 28)
             }
             .buttonStyle(.borderless)
             .help("New Tab (\u{2318}T)")
 
-            Divider().frame(height: 16).padding(.horizontal, 4)
+            Rectangle()
+                .fill(Color.tnLine)
+                .frame(width: 1, height: 16)
+                .padding(.horizontal, 6)
 
             Button {
                 session.endSession()
             } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "stop.circle.fill")
-                        .font(.system(size: 11))
-                    Text("End")
-                        .font(.system(size: 11, weight: .semibold))
+                HStack(spacing: 5) {
+                    Image(systemName: "stop.fill").font(.system(size: 10))
+                    Text("End").font(.system(size: 11, weight: .semibold))
                 }
-                .foregroundStyle(.red.opacity(0.85))
-                .padding(.horizontal, 8)
-                .frame(height: 22)
+                .foregroundStyle(Color.tnRed)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .fill(Color.tnRed.opacity(0.12))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .strokeBorder(Color.tnRed.opacity(0.35), lineWidth: 1)
+                )
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(.plain)
             .help("End session")
-            .padding(.trailing, 6)
+            .padding(.trailing, 8)
         }
-        .frame(height: 28)
-        .background(Color(white: 0.10))
+        .frame(height: 34)
+        .background(Color.tnBg2)
         .overlay(alignment: .bottom) {
             Rectangle()
-                .fill(Color.black.opacity(0.35))
+                .fill(Color.tnLine)
                 .frame(height: 1)
         }
     }
@@ -100,48 +110,49 @@ struct TabChip: View {
     @State private var hover = false
 
     var body: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 6) {
             if isHidden {
                 Image(systemName: "eye.slash")
                     .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.tnFg3)
             }
             Text(title)
                 .font(.system(size: 12, weight: isActive ? .semibold : .regular))
-                .foregroundStyle(isActive ? Color.primary : Color.secondary)
+                .foregroundStyle(isActive ? Color.tnFg : Color.tnFg3)
                 .lineLimit(1)
                 .truncationMode(.middle)
             if let badge {
                 Text("\(badge)")
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 5).padding(.vertical, 1)
-                    .background(Capsule().fill(Color.accentColor.opacity(0.85)))
+                    .foregroundStyle(Color.tnBg)
+                    .padding(.horizontal, 6).padding(.vertical, 1)
+                    .background(Capsule().fill(Color.tnPurple))
             }
             if canClose && (hover || isActive) {
                 Button(action: onClose) {
                     Image(systemName: "xmark")
                         .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(Color.tnFg3)
                         .frame(width: 14, height: 14)
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 12)
-        .frame(height: 28)
-        .frame(maxWidth: 200)
-        .background(isActive ? Color.primary.opacity(0.08) : (hover ? Color.primary.opacity(0.04) : Color.clear))
+        .padding(.horizontal, 14)
+        .frame(height: 34)
+        .frame(maxWidth: 220)
+        .background(isActive ? Color.tnBg : (hover ? Color.tnBg.opacity(0.5) : Color.clear))
         .overlay(alignment: .bottom) {
             if isActive {
                 Rectangle()
-                    .fill(Color.accentColor)
+                    .fill(Color.tnBlue)
                     .frame(height: 2)
             }
         }
         .overlay(alignment: .trailing) {
             Rectangle()
-                .fill(Color.black.opacity(0.2))
-                .frame(width: 1, height: 14)
+                .fill(Color.tnLine)
+                .frame(width: 1, height: 16)
         }
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)

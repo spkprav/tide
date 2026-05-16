@@ -31,18 +31,18 @@ struct TerminalLeafView: View {
                 }
             )
             TerminalRepresentable(sessionID: sessionID, tab: tab)
-                .background(Color.black)
+                .background(SwiftUI.Color.tnBg)
         }
-        .background(Color.black)
+        .background(SwiftUI.Color.tnBg)
         .overlay(
             Rectangle()
-                .stroke(tab.activeLeafID == sessionID ? Color.accentColor : Color.clear, lineWidth: 1)
+                .stroke(tab.activeLeafID == sessionID ? SwiftUI.Color.tnBlue : SwiftUI.Color.clear, lineWidth: 1)
                 .allowsHitTesting(false)
         )
         .overlay(
             Rectangle()
-                .stroke(Color.accentColor, lineWidth: 2 + flash * 4)
-                .shadow(color: Color.accentColor.opacity(flash), radius: 18 * flash)
+                .stroke(SwiftUI.Color.tnBlue, lineWidth: 2 + flash * 4)
+                .shadow(color: SwiftUI.Color.tnBlue.opacity(flash), radius: 18 * flash)
                 .opacity(flash)
                 .allowsHitTesting(false)
         )
@@ -101,24 +101,24 @@ struct PaneTitleBar: View {
     @State private var showReminder = false
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 7) {
             Circle()
-                .fill(isActive ? Color.accentColor : Color.secondary.opacity(0.4))
+                .fill(isActive ? SwiftUI.Color.tnBlue : SwiftUI.Color.tnFg3.opacity(0.5))
                 .frame(width: 6, height: 6)
             Text(title)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(isActive ? Color.primary : Color.secondary)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(isActive ? SwiftUI.Color.tnFg : SwiftUI.Color.tnFg3)
                 .lineLimit(1)
                 .truncationMode(.middle)
             if isZoomed {
                 Image(systemName: "arrow.up.left.and.arrow.down.right")
                     .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(.yellow)
+                    .foregroundStyle(SwiftUI.Color.tnYellow)
             }
             if reminder != nil {
                 Image(systemName: reminder?.sawActivity == true ? "bell.badge.waveform" : "bell.badge")
                     .font(.system(size: 9))
-                    .foregroundStyle(.yellow)
+                    .foregroundStyle(SwiftUI.Color.tnYellow)
             }
             Spacer(minLength: 0)
             if hover || isActive || reminder != nil {
@@ -127,7 +127,7 @@ struct PaneTitleBar: View {
                 } label: {
                     Image(systemName: reminder != nil ? "bell.fill" : "bell")
                         .font(.system(size: 10))
-                        .foregroundStyle(reminder != nil ? Color.yellow : .secondary)
+                        .foregroundStyle(reminder != nil ? SwiftUI.Color.tnYellow : SwiftUI.Color.tnFg3)
                         .frame(width: 18, height: 18)
                 }
                 .buttonStyle(.borderless)
@@ -149,7 +149,7 @@ struct PaneTitleBar: View {
                 Button(action: onToggleZoom) {
                     Image(systemName: isZoomed ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
                         .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(SwiftUI.Color.tnFg3)
                         .frame(width: 18, height: 18)
                 }
                 .buttonStyle(.borderless)
@@ -158,7 +158,7 @@ struct PaneTitleBar: View {
                 Button(action: onHide) {
                     Image(systemName: "eye.slash")
                         .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(SwiftUI.Color.tnFg3)
                         .frame(width: 18, height: 18)
                 }
                 .buttonStyle(.borderless)
@@ -167,16 +167,19 @@ struct PaneTitleBar: View {
                 Button(action: onClose) {
                     Image(systemName: "xmark")
                         .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(SwiftUI.Color.tnFg3)
                         .frame(width: 18, height: 18)
                 }
                 .buttonStyle(.borderless)
                 .help("Close pane")
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 3)
-        .background(Color(white: 0.10))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
+        .background(SwiftUI.Color.tnBg2)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(SwiftUI.Color.tnLine).frame(height: 1)
+        }
         .contentShape(Rectangle())
         .onHover { hover = $0 }
         .onTapGesture(count: 2) {

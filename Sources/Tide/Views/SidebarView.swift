@@ -19,10 +19,12 @@ struct SidebarView: View {
                 NotificationsRowItem(count: store.totalArmedReminderCount)
                     .tag(NOTIFICATIONS_ID)
             }
+            .listRowBackground(SwiftUI.Color.clear)
             Section {
                 ForEach(store.projects) { project in
-                    SidebarRow(project: project)
+                    SidebarRow(project: project, isSelected: store.selectedID == project.id)
                         .tag(project.id)
+                        .listRowBackground(SwiftUI.Color.clear)
                         .contextMenu {
                             Button("Edit…") { editing = project }
                             Button("Reveal in Finder") {
@@ -41,22 +43,42 @@ struct SidebarView: View {
                 }
             } header: {
                 Text("Projects")
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(1)
+                    .foregroundStyle(SwiftUI.Color.tnFg3)
             }
         }
         .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
+        .background(SwiftUI.Color.tnBg2)
         .safeAreaInset(edge: .bottom) {
-            HStack {
+            HStack(spacing: 6) {
                 Button {
                     showAddSheet = true
                 } label: {
-                    Label("Add Project", systemImage: "plus")
-                        .frame(maxWidth: .infinity)
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 10, weight: .semibold))
+                        Text("Add project")
+                            .font(.system(size: 12))
+                    }
+                    .foregroundStyle(SwiftUI.Color.tnFg3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.borderless)
-                .padding(.vertical, 6)
+                .buttonStyle(.plain)
+                .background(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(SwiftUI.Color.white.opacity(0.02))
+                )
             }
-            .padding(.horizontal, 8)
-            .background(.bar)
+            .padding(8)
+            .background(SwiftUI.Color.tnBg2)
+            .overlay(alignment: .top) {
+                Rectangle().fill(SwiftUI.Color.tnLine).frame(height: 1)
+            }
         }
         .sheet(isPresented: $showAddSheet) {
             AddProjectSheet { newProject in
@@ -76,10 +98,11 @@ struct OverviewRowItem: View {
         HStack(spacing: 10) {
             Image(systemName: "square.grid.3x3.fill")
                 .font(.system(size: 12))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(SwiftUI.Color.tnBlue)
                 .frame(width: 14, height: 14)
             Text("Overview")
                 .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(SwiftUI.Color.tnFg)
             Spacer(minLength: 0)
         }
         .padding(.vertical, 2)
@@ -93,14 +116,15 @@ struct StatsRowItem: View {
         HStack(spacing: 10) {
             Image(systemName: "chart.bar.xaxis")
                 .font(.system(size: 12))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(SwiftUI.Color.tnCyan)
                 .frame(width: 14, height: 14)
             Text("Usage Stats")
                 .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(SwiftUI.Color.tnFg)
             Spacer(minLength: 0)
             Text(UsageTracker.formatDuration(tracker.totalActiveTodaySeconds))
                 .font(.system(size: 10, design: .monospaced))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(SwiftUI.Color.tnFg3)
         }
         .padding(.vertical, 2)
     }
@@ -113,17 +137,18 @@ struct NotificationsRowItem: View {
         HStack(spacing: 10) {
             Image(systemName: "bell.badge")
                 .font(.system(size: 12))
-                .foregroundStyle(.yellow)
+                .foregroundStyle(SwiftUI.Color.tnYellow)
                 .frame(width: 14, height: 14)
             Text("Notifications")
                 .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(SwiftUI.Color.tnFg)
             Spacer(minLength: 0)
             if count > 0 {
                 Text("\(count)")
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(SwiftUI.Color.tnBg)
                     .padding(.horizontal, 6).padding(.vertical, 1)
-                    .background(Capsule().fill(Color.yellow.opacity(0.85)))
+                    .background(Capsule().fill(SwiftUI.Color.tnYellow))
             }
         }
         .padding(.vertical, 2)
@@ -137,17 +162,18 @@ struct ActiveSessionsRow: View {
         HStack(spacing: 10) {
             Image(systemName: "rectangle.grid.2x2")
                 .font(.system(size: 12))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(SwiftUI.Color.tnPurple)
                 .frame(width: 14, height: 14)
             Text("Active Sessions")
                 .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(SwiftUI.Color.tnFg)
             Spacer(minLength: 0)
             if count > 0 {
                 Text("\(count)")
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(SwiftUI.Color.tnBg)
                     .padding(.horizontal, 6).padding(.vertical, 1)
-                    .background(Capsule().fill(Color.accentColor))
+                    .background(Capsule().fill(SwiftUI.Color.tnPurple))
             }
         }
         .padding(.vertical, 2)
@@ -156,6 +182,7 @@ struct ActiveSessionsRow: View {
 
 struct SidebarRow: View {
     let project: Project
+    var isSelected: Bool = false
     @AppStorage("tide.sidebar.showProjectPath") private var showPath: Bool = true
 
     var body: some View {
@@ -172,11 +199,12 @@ struct SidebarRow: View {
             }
             VStack(alignment: .leading, spacing: 1) {
                 Text(project.name)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
+                    .foregroundStyle(isSelected ? SwiftUI.Color.tnFg : SwiftUI.Color.tnFg2)
                 if showPath {
                     Text(displayPath(project.expandedPath))
                         .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(SwiftUI.Color.tnFg3)
                         .lineLimit(1)
                         .truncationMode(.middle)
                 }
