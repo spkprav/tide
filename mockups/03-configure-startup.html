@@ -1,0 +1,86 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Tide — Configure startup</title>
+<link rel="stylesheet" href="tide.css"></head>
+<body>
+<div class="window">
+  <div class="titlebar">
+    <div class="lights"><div class="light r"></div><div class="light y"></div><div class="light g"></div></div>
+    <div class="title">Tide — acme-web</div>
+  </div>
+  <div class="main">
+    <aside class="sidebar">
+      <h6>Projects</h6>
+      <div class="proj active"><span class="dot" style="background:#9ECE6A"></span>acme-web</div>
+      <div class="proj"><span class="dot" style="background:#7AA2F7"></span>payments-api</div>
+      <div class="proj"><span class="dot" style="background:#BB9AF7"></span>mobile-sdk</div>
+      <div class="proj"><span class="dot" style="background:#FF9E64"></span>data-pipeline</div>
+      <div class="spacer"></div>
+      <div class="add">+ Add project</div>
+    </aside>
+    <section class="content">
+      <div class="tabbar"><div class="tab active">Start</div><div class="tab newtab">+</div></div>
+      <div class="start"></div>
+    </section>
+  </div>
+  <div class="scrim">
+    <div class="sheet" style="width: 720px; max-height: 700px;">
+      <h2>Startup configuration · acme-web</h2>
+      <div>
+        <label>Layout</label>
+        <div class="layouts">
+          <div class="layout-card">
+            <div class="preview" style="grid-template-columns:1fr"><div class="cell"></div></div>
+            <div class="name">Single</div>
+          </div>
+          <div class="layout-card active">
+            <div class="preview" style="grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr">
+              <div class="cell"></div><div class="cell"></div>
+              <div class="cell"></div><div class="cell"></div>
+            </div>
+            <div class="name">2 × 2 grid</div>
+          </div>
+          <div class="layout-card">
+            <div class="preview" style="grid-template-rows:2fr 1fr">
+              <div class="cell"></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px"><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
+            </div>
+            <div class="name">Top + 3</div>
+          </div>
+          <div class="layout-card">
+            <div class="preview" style="grid-template-columns:1fr 1fr">
+              <div class="cell"></div>
+              <div style="display:grid;grid-template-rows:1fr 1fr 1fr;gap:2px"><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
+            </div>
+            <div class="name">Left + stack</div>
+          </div>
+          <div class="layout-card">
+            <div class="preview" style="grid-template-rows:1fr 1fr 1fr"><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
+            <div class="name">Rows</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <label>Pane commands (4)</label>
+        <div class="row">
+          <div class="col"><label style="color:var(--blue);font-weight:600">Pane 1 — server</label>
+            <textarea rows="2">cd ~/code/acme-web && npm run dev</textarea></div>
+          <div class="col"><label style="color:var(--green);font-weight:600">Pane 2 — tests</label>
+            <textarea rows="2">cd ~/code/acme-web && npm test -- --watch</textarea></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div class="col"><label style="color:var(--purple);font-weight:600">Pane 3 — logs</label>
+            <textarea rows="2">tail -f ~/code/acme-web/logs/dev.log</textarea></div>
+          <div class="col"><label style="color:var(--orange);font-weight:600">Pane 4 — shell</label>
+            <textarea rows="2">cd ~/code/acme-web</textarea></div>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="btn" style="margin-right:auto">Export JSON</div>
+        <div class="btn">Import…</div>
+        <div class="btn">Cancel</div>
+        <div class="btn primary">Save</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>

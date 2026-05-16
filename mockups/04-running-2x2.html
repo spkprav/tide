@@ -1,0 +1,102 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Tide — 2×2 running</title>
+<link rel="stylesheet" href="tide.css"></head>
+<body>
+<div class="window">
+  <div class="titlebar">
+    <div class="lights"><div class="light r"></div><div class="light y"></div><div class="light g"></div></div>
+    <div class="title">Tide — acme-web</div>
+  </div>
+  <div class="main">
+    <aside class="sidebar">
+      <h6>Projects</h6>
+      <div class="proj active"><span class="dot" style="background:#9ECE6A"></span>acme-web</div>
+      <div class="proj"><span class="dot" style="background:#7AA2F7"></span>payments-api</div>
+      <div class="proj"><span class="dot" style="background:#BB9AF7"></span>mobile-sdk</div>
+      <div class="proj"><span class="dot" style="background:#FF9E64"></span>data-pipeline</div>
+      <div class="spacer"></div>
+      <div class="add">+ Add project</div>
+    </aside>
+    <section class="content">
+      <div class="tabbar">
+        <div class="tab active">main</div>
+        <div class="tab">db-console</div>
+        <div class="tab newtab">+</div>
+        <div style="flex:1"></div>
+        <div class="tab" style="color:var(--red)">End</div>
+      </div>
+      <div class="terminal-grid" style="grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr">
+        <div class="pane">
+          <div class="pane-title">server · npm run dev<span class="pill run">running</span></div>
+          <div class="pane-body">
+<span class="dim">$ npm run dev</span><br>
+<br>
+<span class="purple">VITE</span> v5.0.10  <span class="green">ready in 421 ms</span><br>
+<br>
+  ➜  <span class="cyan">Local:</span>   <span class="blue">http://localhost:5173/</span><br>
+  ➜  <span class="cyan">Network:</span> use <span class="dim">--host</span> to expose<br>
+  ➜  <span class="cyan">press </span><span class="ok">h</span> + enter to show help<br>
+<br>
+<span class="dim">[hmr]</span> page reload <span class="ok">src/App.tsx</span><br>
+<span class="dim">[hmr]</span> hot update <span class="ok">src/components/Nav.tsx</span><br>
+<span class="dim">12:04:21</span> <span class="ok">200</span> GET /api/users 18ms<br>
+<span class="dim">12:04:23</span> <span class="ok">200</span> POST /api/login 42ms<br>
+<span class="cursor"></span>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="pane-title">tests · vitest --watch<span class="pill run">running</span></div>
+          <div class="pane-body">
+<span class="ok">✓</span> src/utils/format.test.ts (12)<br>
+<span class="ok">✓</span> src/components/Nav.test.tsx (5)<br>
+<span class="ok">✓</span> src/lib/auth.test.ts (8)<br>
+<span class="err">✗</span> src/api/client.test.ts (1 failed)<br>
+<br>
+<span class="err">FAIL</span> src/api/client.test.ts &gt; retries on 503<br>
+<span class="dim">  expected 3 retries, received 2</span><br>
+<br>
+ Test Files  <span class="err">1 failed</span> | <span class="ok">3 passed</span> (4)<br>
+      Tests  <span class="err">1 failed</span> | <span class="ok">25 passed</span> (26)<br>
+<br>
+<span class="dim">PASS  Waiting for file changes...</span><span class="cursor"></span>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="pane-title">logs · tail -f dev.log<span class="pill run">running</span></div>
+          <div class="pane-body">
+<span class="dim">[12:03:51]</span> <span class="blue">INFO </span> server listening on :3000<br>
+<span class="dim">[12:03:54]</span> <span class="blue">INFO </span> redis connected (localhost:6379)<br>
+<span class="dim">[12:03:54]</span> <span class="blue">INFO </span> pg pool ready (10 conns)<br>
+<span class="dim">[12:04:11]</span> <span class="warn">WARN </span> slow query 1.2s users.search<br>
+<span class="dim">[12:04:18]</span> <span class="blue">INFO </span> session created u=42<br>
+<span class="dim">[12:04:21]</span> <span class="blue">INFO </span> GET /api/users 18ms<br>
+<span class="dim">[12:04:23]</span> <span class="blue">INFO </span> POST /api/login 42ms<br>
+<span class="dim">[12:04:30]</span> <span class="warn">WARN </span> rate limit near 80% u=42<br>
+<span class="cursor"></span>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="pane-title">shell · zsh<span class="pill idle">idle</span></div>
+          <div class="pane-body">
+<span class="prompt">➜</span> <span class="path">acme-web</span> <span class="purple">git:(main)</span> git status<br>
+<span class="ok">On branch main</span><br>
+Your branch is up to date with <span class="cyan">'origin/main'</span>.<br>
+<br>
+Changes not staged for commit:<br>
+  <span class="err">modified:</span>   src/api/client.ts<br>
+  <span class="err">modified:</span>   src/api/client.test.ts<br>
+<br>
+<span class="prompt">➜</span> <span class="path">acme-web</span> <span class="purple">git:(main) ✗</span> <span class="cursor"></span>
+          </div>
+        </div>
+      </div>
+      <div class="snippets">
+        <div class="snip-chip">git status</div>
+        <div class="snip-chip">npm test</div>
+        <div class="snip-chip">docker compose up</div>
+        <input class="snip-input" placeholder="Type a command, ⏎ to send to active pane · ⌘L to focus"/>
+      </div>
+    </section>
+  </div>
+</div>
+</body></html>

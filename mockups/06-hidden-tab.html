@@ -1,0 +1,98 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Tide — Hidden panes</title>
+<link rel="stylesheet" href="tide.css"></head>
+<body>
+<div class="window">
+  <div class="titlebar">
+    <div class="lights"><div class="light r"></div><div class="light y"></div><div class="light g"></div></div>
+    <div class="title">Tide — acme-web</div>
+  </div>
+  <div class="main">
+    <aside class="sidebar">
+      <h6>Projects</h6>
+      <div class="proj active"><span class="dot" style="background:#9ECE6A"></span>acme-web</div>
+      <div class="proj"><span class="dot" style="background:#7AA2F7"></span>payments-api</div>
+      <div class="proj"><span class="dot" style="background:#BB9AF7"></span>mobile-sdk</div>
+      <div class="proj"><span class="dot" style="background:#FF9E64"></span>data-pipeline</div>
+      <div class="spacer"></div>
+      <div class="add">+ Add project</div>
+    </aside>
+    <section class="content">
+      <div class="tabbar">
+        <div class="tab">main</div>
+        <div class="tab">tests</div>
+        <div class="tab active">Hidden <span class="badge">4</span></div>
+        <div class="tab newtab">+</div>
+        <div style="flex:1"></div>
+        <div class="tab" style="color:var(--red)">End</div>
+      </div>
+      <div class="hidden-grid" style="grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr">
+        <div class="hidden-card">
+          <div class="head">
+            <span>docker compose up <span class="pill" style="background:var(--green);color:var(--bg);font-size:9px;padding:1px 5px;border-radius:4px;">running</span></span>
+            <div class="actions"><div class="btn mini">Restore</div><div class="btn mini danger">Kill</div></div>
+          </div>
+          <div class="body">
+postgres-1   | <span style="color:#9ECE6A">LOG</span>  database system is ready<br>
+redis-1      | <span style="color:#9ECE6A">Ready to accept connections</span><br>
+api-1        | listening :3000<br>
+worker-1     | sidekiq 7.2.0 starting<br>
+worker-1     | <span style="color:#7DCFFF">2026-05-15T12:01:18Z</span> jobs polling queue<br>
+api-1        | <span style="color:#9ECE6A">GET /health 200 2ms</span><br>
+          </div>
+        </div>
+        <div class="hidden-card">
+          <div class="head">
+            <span>ngrok http 3000 <span class="pill" style="background:var(--green);color:var(--bg);font-size:9px;padding:1px 5px;border-radius:4px;">running</span></span>
+            <div class="actions"><div class="btn mini">Restore</div><div class="btn mini danger">Kill</div></div>
+          </div>
+          <div class="body">
+Session Status   <span style="color:#9ECE6A">online</span><br>
+Account          demo@acme.test<br>
+Version          3.6.0<br>
+Region           United States (us)<br>
+Forwarding       https://acme.ngrok.app -&gt; localhost:3000<br>
+<br>
+HTTP Requests<br>
+GET  /api/health    <span style="color:#9ECE6A">200</span><br>
+POST /api/webhooks  <span style="color:#9ECE6A">204</span><br>
+          </div>
+        </div>
+        <div class="hidden-card">
+          <div class="head">
+            <span>tsc --watch <span class="pill" style="background:var(--green);color:var(--bg);font-size:9px;padding:1px 5px;border-radius:4px;">running</span></span>
+            <div class="actions"><div class="btn mini">Restore</div><div class="btn mini danger">Kill</div></div>
+          </div>
+          <div class="body">
+<span style="color:#565F89">[12:00:52]</span> Starting compilation in watch mode...<br>
+<span style="color:#565F89">[12:00:55]</span> Found <span style="color:#9ECE6A">0 errors</span>. Watching for file changes.<br>
+<span style="color:#565F89">[12:04:11]</span> File change detected.<br>
+<span style="color:#565F89">[12:04:13]</span> Found <span style="color:#9ECE6A">0 errors</span>. Watching for file changes.<br>
+          </div>
+        </div>
+        <div class="hidden-card">
+          <div class="head">
+            <span>htop <span class="pill" style="background:var(--fg3);color:var(--bg);font-size:9px;padding:1px 5px;border-radius:4px;">idle</span></span>
+            <div class="actions"><div class="btn mini">Restore</div><div class="btn mini danger">Kill</div></div>
+          </div>
+          <div class="body">
+  CPU[<span style="color:#9ECE6A">||||</span><span style="color:#E0AF68">|||</span><span style="color:#565F89">.....</span> 36.4%]<br>
+  Mem[<span style="color:#9ECE6A">||||||</span><span style="color:#E0AF68">||</span><span style="color:#565F89">..</span> 12.4G/16G]<br>
+  Swp[<span style="color:#565F89">..........</span>  0/4.0G]<br>
+<br>
+  PID USER  CPU% MEM% COMMAND<br>
+ 2841 pk    18.2  6.4 node<br>
+ 2902 pk     9.1  3.2 ruby<br>
+ 1204 pk     4.0  1.1 postgres<br>
+          </div>
+        </div>
+      </div>
+      <div class="snippets">
+        <div class="snip-chip">Restore all</div>
+        <div class="snip-chip" style="border-color:var(--red);color:var(--red)">Kill all</div>
+        <input class="snip-input" placeholder="Hidden panes keep processes running off-screen"/>
+      </div>
+    </section>
+  </div>
+</div>
+</body></html>

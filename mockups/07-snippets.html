@@ -1,0 +1,58 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Tide — Snippets bar</title>
+<link rel="stylesheet" href="tide.css"></head>
+<body>
+<div class="window">
+  <div class="titlebar">
+    <div class="lights"><div class="light r"></div><div class="light y"></div><div class="light g"></div></div>
+    <div class="title">Tide — acme-web</div>
+  </div>
+  <div class="main">
+    <aside class="sidebar">
+      <h6>Projects</h6>
+      <div class="proj active"><span class="dot" style="background:#9ECE6A"></span>acme-web</div>
+      <div class="proj"><span class="dot" style="background:#7AA2F7"></span>payments-api</div>
+      <div class="proj"><span class="dot" style="background:#BB9AF7"></span>mobile-sdk</div>
+      <div class="proj"><span class="dot" style="background:#FF9E64"></span>data-pipeline</div>
+      <div class="spacer"></div>
+      <div class="add">+ Add project</div>
+    </aside>
+    <section class="content">
+      <div class="tabbar">
+        <div class="tab active">main</div>
+        <div class="tab newtab">+</div>
+        <div style="flex:1"></div>
+        <div class="tab" style="color:var(--red)">End</div>
+      </div>
+      <div class="terminal-grid" style="grid-template-rows:1fr">
+        <div class="pane">
+          <div class="pane-title">shell · zsh<span class="pill run">active</span></div>
+          <div class="pane-body" style="font-size:13px;">
+<span class="prompt">➜</span> <span class="path">acme-web</span> <span class="purple">git:(main)</span> <span class="cmd">npm run dev</span><br>
+<br>
+<span class="purple">VITE</span> v5.0.10  <span class="green">ready in 421 ms</span><br>
+<br>
+  ➜  <span class="cyan">Local:</span>   <span class="blue">http://localhost:5173/</span><br>
+<br>
+<span class="prompt">➜</span> <span class="path">acme-web</span> <span class="purple">git:(main)</span> <span class="cmd">git status</span><br>
+<span class="ok">On branch main · clean.</span><br>
+<br>
+<span class="prompt">➜</span> <span class="path">acme-web</span> <span class="purple">git:(main)</span> <span class="cursor"></span>
+          </div>
+        </div>
+      </div>
+      <div class="snippets" style="height:auto;padding:10px;flex-direction:column;align-items:stretch;gap:8px">
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <div class="snip-chip">git status</div>
+          <div class="snip-chip">git log --oneline -20</div>
+          <div class="snip-chip">npm test -- --watch</div>
+          <div class="snip-chip">docker compose up -d</div>
+          <div class="snip-chip">make migrate</div>
+          <div class="snip-chip" style="border-color:var(--blue);color:var(--blue)">+ Save current</div>
+        </div>
+        <input class="snip-input focus" placeholder="" value="docker compose down && docker compose up -d"/>
+      </div>
+    </section>
+  </div>
+</div>
+</body></html>

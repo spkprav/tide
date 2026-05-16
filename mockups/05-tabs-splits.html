@@ -1,0 +1,82 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Tide — Tabs &amp; splits</title>
+<link rel="stylesheet" href="tide.css"></head>
+<body>
+<div class="window">
+  <div class="titlebar">
+    <div class="lights"><div class="light r"></div><div class="light y"></div><div class="light g"></div></div>
+    <div class="title">Tide — payments-api</div>
+  </div>
+  <div class="main">
+    <aside class="sidebar">
+      <h6>Projects</h6>
+      <div class="proj"><span class="dot" style="background:#9ECE6A"></span>acme-web</div>
+      <div class="proj active"><span class="dot" style="background:#7AA2F7"></span>payments-api</div>
+      <div class="proj"><span class="dot" style="background:#BB9AF7"></span>mobile-sdk</div>
+      <div class="proj"><span class="dot" style="background:#FF9E64"></span>data-pipeline</div>
+      <div class="spacer"></div>
+      <div class="add">+ Add project</div>
+    </aside>
+    <section class="content">
+      <div class="tabbar">
+        <div class="tab">main</div>
+        <div class="tab active">migrations <span class="close">×</span></div>
+        <div class="tab">repl</div>
+        <div class="tab">Hidden <span class="badge">3</span></div>
+        <div class="tab newtab">+</div>
+        <div style="flex:1"></div>
+        <div class="tab" style="color:var(--red)">End</div>
+      </div>
+      <div class="terminal-grid" style="grid-template-columns:2fr 1fr">
+        <div class="pane">
+          <div class="pane-title">migrations · psql<span class="pill run">running</span></div>
+          <div class="pane-body">
+<span class="cyan">payments=#</span> \d+ transactions<br>
+<br>
+                                  Table "public.transactions"<br>
+   Column     |     Type      | Collation | Nullable |              Default<br>
+--------------+---------------+-----------+----------+-----------------------------------<br>
+ id           | bigint        |           | not null | nextval('transactions_id_seq')<br>
+ user_id      | bigint        |           | not null |<br>
+ amount_cents | integer       |           | not null |<br>
+ currency     | char(3)       |           | not null | <span class="ok">'USD'</span><br>
+ status       | varchar(20)   |           | not null | <span class="ok">'pending'</span><br>
+ created_at   | timestamptz   |           | not null | now()<br>
+<br>
+Indexes:<br>
+    <span class="cyan">"transactions_pkey"</span> PRIMARY KEY, btree (id)<br>
+    <span class="cyan">"idx_tx_user_created"</span> btree (user_id, created_at DESC)<br>
+<br>
+<span class="cyan">payments=#</span> <span class="cursor"></span>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="pane-title">redis · redis-cli<span class="pill run">running</span></div>
+          <div class="pane-body">
+<span class="cyan">127.0.0.1:6379&gt;</span> <span class="cmd">INFO clients</span><br>
+<span class="purple"># Clients</span><br>
+connected_clients:<span class="ok">14</span><br>
+maxclients:<span class="ok">10000</span><br>
+<br>
+<span class="cyan">127.0.0.1:6379&gt;</span> <span class="cmd">DBSIZE</span><br>
+(integer) <span class="ok">42819</span><br>
+<br>
+<span class="cyan">127.0.0.1:6379&gt;</span> <span class="cmd">KEYS session:*</span> | head<br>
+1) <span class="ok">"session:9f2c..."</span><br>
+2) <span class="ok">"session:a14e..."</span><br>
+3) <span class="ok">"session:bd71..."</span><br>
+<br>
+<span class="cyan">127.0.0.1:6379&gt;</span> <span class="cursor"></span>
+          </div>
+        </div>
+      </div>
+      <div class="snippets">
+        <div class="snip-chip">⌘D split right</div>
+        <div class="snip-chip">⌘⇧D split down</div>
+        <div class="snip-chip">⌘T new tab</div>
+        <input class="snip-input" placeholder="Type a command, ⏎ to send to active pane · ⌘L to focus"/>
+      </div>
+    </section>
+  </div>
+</div>
+</body></html>
