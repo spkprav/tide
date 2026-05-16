@@ -245,6 +245,7 @@ struct ReminderPopover: View {
         }
         .padding(14)
         .frame(width: 380)
+        .background(SwiftUI.Color.tnBg3)
         .onAppear {
             if reminder == nil { focused = true }
         }
@@ -254,78 +255,104 @@ struct ReminderPopover: View {
     private func armedView(r: PaneReminder) -> some View {
         HStack(spacing: 6) {
             Image(systemName: r.sawActivity ? "bell.badge.waveform.fill" : "bell.badge.fill")
-                .foregroundStyle(.yellow)
+                .foregroundStyle(SwiftUI.Color.tnYellow)
             Text(armedHeadline(r: r))
                 .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(SwiftUI.Color.tnFg)
         }
         HStack(spacing: 5) {
             Image(systemName: kindIcon(r.kind))
                 .font(.system(size: 10))
+                .foregroundStyle(SwiftUI.Color.tnFg3)
             Text(r.kind.label)
                 .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(SwiftUI.Color.tnFg3)
         }
         Text("Message:")
             .font(.system(size: 10))
-            .foregroundStyle(.secondary)
+            .foregroundStyle(SwiftUI.Color.tnFg3)
         Text(r.message.isEmpty ? "(default message)" : r.message)
             .font(.system(size: 12, design: .monospaced))
-            .foregroundStyle(.primary)
+            .foregroundStyle(SwiftUI.Color.tnFg)
             .padding(8)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 5))
-        Button(role: .destructive) {
-            onCancel()
-        } label: {
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(SwiftUI.Color.tnBg)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(SwiftUI.Color.tnLine, lineWidth: 1)
+            )
+        Button(action: onCancel) {
             HStack {
                 Image(systemName: "bell.slash.fill")
                 Text("Cancel reminder")
             }
             .frame(maxWidth: .infinity)
         }
+        .buttonStyle(TidePrimaryButton(tint: SwiftUI.Color.tnRed))
     }
 
     @ViewBuilder
     private func arrangementView() -> some View {
         Text("Notify me when…")
             .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(SwiftUI.Color.tnFg)
 
-        Picker("Kind", selection: $kindOption) {
+        HStack(spacing: 6) {
             ForEach(ReminderKindOption.allCases) { opt in
-                Label(opt.title, systemImage: opt.icon).tag(opt)
+                Button {
+                    kindOption = opt
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: opt.icon).font(.system(size: 10))
+                        Text(opt.title).font(.system(size: 11))
+                    }
+                    .foregroundStyle(kindOption == opt ? SwiftUI.Color.white : SwiftUI.Color.tnFg2)
+                    .padding(.horizontal, 10).padding(.vertical, 5)
+                    .background(
+                        Capsule().fill(kindOption == opt ? SwiftUI.Color.tnBlue : SwiftUI.Color.tnBg3)
+                    )
+                    .overlay(
+                        Capsule().strokeBorder(kindOption == opt ? SwiftUI.Color.tnBlue : SwiftUI.Color.tnLine, lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
             }
         }
-        .pickerStyle(.segmented)
-        .labelsHidden()
 
         Text(kindOption.blurb)
             .font(.system(size: 10))
-            .foregroundStyle(.secondary)
+            .foregroundStyle(SwiftUI.Color.tnFg3)
             .fixedSize(horizontal: false, vertical: true)
 
         if kindOption == .aiMonitor {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Task description")
                     .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
-                TextField("e.g. running db migration", text: $aiTask)
-                    .textFieldStyle(.roundedBorder)
+                    .foregroundStyle(SwiftUI.Color.tnFg3)
+                TideTextField(placeholder: "e.g. running db migration", text: $aiTask)
 
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Interval (s)")
                             .font(.system(size: 10))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(SwiftUI.Color.tnFg3)
                         TextField("30", value: $aiInterval, format: .number)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 80)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 13))
+                            .foregroundStyle(SwiftUI.Color.tnFg)
+                            .padding(.horizontal, 10).padding(.vertical, 7)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(SwiftUI.Color.tnBg))
+                            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(SwiftUI.Color.tnLine, lineWidth: 1))
+                            .frame(width: 90)
                     }
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Ollama model")
                             .font(.system(size: 10))
-                            .foregroundStyle(.secondary)
-                        TextField("llama3.2", text: $aiModel)
-                            .textFieldStyle(.roundedBorder)
+                            .foregroundStyle(SwiftUI.Color.tnFg3)
+                        TideTextField(placeholder: "llama3.2", text: $aiModel)
                     }
                 }
             }
@@ -334,9 +361,14 @@ struct ReminderPopover: View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Notification message")
                 .font(.system(size: 10))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(SwiftUI.Color.tnFg3)
             TextField("Optional (e.g. 'rails seed done')", text: $message)
-                .textFieldStyle(.roundedBorder)
+                .textFieldStyle(.plain)
+                .font(.system(size: 13))
+                .foregroundStyle(SwiftUI.Color.tnFg)
+                .padding(.horizontal, 10).padding(.vertical, 7)
+                .background(RoundedRectangle(cornerRadius: 6).fill(SwiftUI.Color.tnBg))
+                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(focused ? SwiftUI.Color.tnBlue : SwiftUI.Color.tnLine, lineWidth: 1))
                 .focused($focused)
                 .onSubmit { arm() }
         }
@@ -344,12 +376,13 @@ struct ReminderPopover: View {
         Button {
             arm()
         } label: {
-            HStack {
+            HStack(spacing: 6) {
                 Image(systemName: "bell.fill")
                 Text("Watch this pane")
             }
             .frame(maxWidth: .infinity)
         }
+        .buttonStyle(TidePrimaryButton())
         .keyboardShortcut(.defaultAction)
         .disabled(armDisabled)
     }

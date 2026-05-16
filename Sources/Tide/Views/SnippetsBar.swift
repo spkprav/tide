@@ -117,19 +117,24 @@ struct SnippetsPopover: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Snippets").font(.system(size: 12, weight: .semibold))
+                Text("Snippets")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(SwiftUI.Color.tnFg)
                 Spacer()
-                Button("Add", action: onAdd)
-                    .buttonStyle(.borderless)
-                    .font(.system(size: 11))
+                Button(action: onAdd) {
+                    Label("Add", systemImage: "plus")
+                        .font(.system(size: 11))
+                }
+                .buttonStyle(TideChipButton(tint: SwiftUI.Color.tnBlue))
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            Divider()
+            .padding(.vertical, 9)
+            .background(SwiftUI.Color.tnBg2)
+            Rectangle().fill(SwiftUI.Color.tnLine).frame(height: 1)
             if snippets.isEmpty {
                 Text("No snippets yet.\nAdd one with the + button.")
                     .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(SwiftUI.Color.tnFg3)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity, minHeight: 80)
             } else {
@@ -137,7 +142,7 @@ struct SnippetsPopover: View {
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(snippets) { snippet in
                             SnippetRow(snippet: snippet, onPick: { onPick(snippet) }, onRemove: { onRemove(snippet.id) })
-                            Divider()
+                            Rectangle().fill(SwiftUI.Color.tnLine.opacity(0.5)).frame(height: 1)
                         }
                     }
                 }
@@ -145,6 +150,7 @@ struct SnippetsPopover: View {
             }
         }
         .frame(width: 360)
+        .background(SwiftUI.Color.tnBg3)
     }
 }
 
@@ -156,26 +162,28 @@ struct SnippetRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
-                    Text(snippet.name).font(.system(size: 12, weight: .medium))
+                    Text(snippet.name)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(SwiftUI.Color.tnFg)
                     if snippet.isGlobal {
                         Text("global")
                             .font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 5).padding(.vertical, 1)
-                            .background(Capsule().fill(Color.secondary.opacity(0.15)))
+                            .foregroundStyle(SwiftUI.Color.tnFg3)
+                            .padding(.horizontal, 6).padding(.vertical, 1)
+                            .background(Capsule().fill(SwiftUI.Color.tnBg))
                     } else {
                         Text("project")
                             .font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(.blue)
-                            .padding(.horizontal, 5).padding(.vertical, 1)
-                            .background(Capsule().fill(Color.blue.opacity(0.15)))
+                            .foregroundStyle(SwiftUI.Color.tnBlue)
+                            .padding(.horizontal, 6).padding(.vertical, 1)
+                            .background(Capsule().fill(SwiftUI.Color.tnBlue.opacity(0.15)))
                     }
                 }
                 Text(snippet.command)
-                    .font(.system(.caption, design: .monospaced))
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(SwiftUI.Color.tnFg3)
                     .lineLimit(2)
             }
             Spacer(minLength: 0)
@@ -183,14 +191,14 @@ struct SnippetRow: View {
                 Button(action: onRemove) {
                     Image(systemName: "trash")
                         .font(.system(size: 11))
-                        .foregroundStyle(.red)
+                        .foregroundStyle(SwiftUI.Color.tnRed)
                 }
                 .buttonStyle(.borderless)
             }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(hover ? Color.primary.opacity(0.05) : Color.clear)
+        .padding(.vertical, 8)
+        .background(hover ? SwiftUI.Color.tnBg4.opacity(0.6) : SwiftUI.Color.clear)
         .contentShape(Rectangle())
         .onHover { hover = $0 }
         .onTapGesture(perform: onPick)
@@ -222,46 +230,67 @@ struct AddSnippetSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Add Snippet").font(.title2.weight(.semibold))
+            Text("New snippet")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(SwiftUI.Color.tnFg)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("Name").font(.callout).foregroundStyle(.secondary)
-                TextField("e.g. rails console", text: $name)
-                    .textFieldStyle(.roundedBorder)
+                Text("Name")
+                    .font(.system(size: 11))
+                    .foregroundStyle(SwiftUI.Color.tnFg3)
+                TideTextField(placeholder: "e.g. rails console", text: $name)
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("Command").font(.callout).foregroundStyle(.secondary)
+                Text("Command")
+                    .font(.system(size: 11))
+                    .foregroundStyle(SwiftUI.Color.tnFg3)
                 TextEditor(text: $command)
-                    .font(.system(.body, design: .monospaced))
+                    .scrollContentBackground(.hidden)
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundStyle(SwiftUI.Color.tnFg)
                     .frame(minHeight: 80, maxHeight: 120)
-                    .padding(4)
-                    .background(RoundedRectangle(cornerRadius: 6).stroke(Color.secondary.opacity(0.3)))
+                    .padding(8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(SwiftUI.Color.tnBg)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .strokeBorder(SwiftUI.Color.tnLine, lineWidth: 1)
+                    )
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("Scope").font(.callout).foregroundStyle(.secondary)
-                Picker("", selection: $scope) {
-                    Text("Global (all projects)").tag(ScopeChoice.global)
-                    Text("Current project only").tag(ScopeChoice.project)
-                        .disabled(currentProjectID == nil)
+                Text("Scope")
+                    .font(.system(size: 11))
+                    .foregroundStyle(SwiftUI.Color.tnFg3)
+                HStack(spacing: 8) {
+                    ScopeChip(label: "Global", active: scope == .global) { scope = .global }
+                    ScopeChip(
+                        label: "Current project",
+                        active: scope == .project,
+                        disabled: currentProjectID == nil
+                    ) { if currentProjectID != nil { scope = .project } }
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
             }
 
             Spacer(minLength: 0)
 
             HStack {
                 Spacer()
-                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button("Cancel") { dismiss() }
+                    .buttonStyle(TideSecondaryButton())
+                    .keyboardShortcut(.cancelAction)
                 Button("Save") { save() }
+                    .buttonStyle(TidePrimaryButton())
                     .keyboardShortcut(.defaultAction)
                     .disabled(!isValid)
             }
         }
-        .padding(20)
-        .frame(width: 480, height: 340)
+        .padding(22)
+        .frame(width: 500, height: 360)
+        .background(SwiftUI.Color.tnBg3)
     }
 
     private var isValid: Bool {
@@ -278,6 +307,32 @@ struct AddSnippetSheet: View {
         )
         onSave(snippet)
         dismiss()
+    }
+}
+
+struct ScopeChip: View {
+    let label: String
+    let active: Bool
+    var disabled: Bool = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(.system(size: 11, weight: active ? .semibold : .regular))
+                .foregroundStyle(disabled ? SwiftUI.Color.tnFg3.opacity(0.5)
+                                 : (active ? SwiftUI.Color.white : SwiftUI.Color.tnFg2))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 5)
+                .background(
+                    Capsule().fill(active ? SwiftUI.Color.tnBlue : SwiftUI.Color.tnBg3)
+                )
+                .overlay(
+                    Capsule().strokeBorder(active ? SwiftUI.Color.tnBlue : SwiftUI.Color.tnLine, lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
     }
 }
 

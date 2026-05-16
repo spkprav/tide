@@ -20,7 +20,7 @@ struct NotificationsView: View {
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 16).padding(.vertical, 10)
-            .background(Color(white: 0.10))
+            .background(SwiftUI.Color.tnBg2)
             .overlay(alignment: .bottom) {
                 Rectangle().fill(Color.black.opacity(0.3)).frame(height: 1)
             }
@@ -38,7 +38,7 @@ struct NotificationsView: View {
                         .foregroundStyle(.tertiary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.black)
+                .background(SwiftUI.Color.tnBg)
             } else {
                 ScrollView {
                     LazyVGrid(
@@ -54,7 +54,7 @@ struct NotificationsView: View {
                     }
                     .padding(10)
                 }
-                .background(Color.black)
+                .background(SwiftUI.Color.tnBg)
             }
         }
     }
@@ -167,7 +167,7 @@ private struct NotificationCardView: View {
                     .foregroundStyle(.primary)
                     .padding(8)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 5))
+                    .background(SwiftUI.Color.tnBg3, in: RoundedRectangle(cornerRadius: 5))
             }
 
             Spacer(minLength: 0)
@@ -197,7 +197,7 @@ private struct NotificationCardView: View {
         .frame(minHeight: 200, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color(white: hover ? 0.13 : 0.10))
+                .fill(hover ? SwiftUI.Color.tnBg4 : SwiftUI.Color.tnBg2)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 10, style: .continuous)

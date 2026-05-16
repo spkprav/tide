@@ -87,7 +87,7 @@ struct ShellSettingsTab: View {
                         .padding(8)
                 }
                 .frame(minHeight: 140, maxHeight: 180)
-                .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 6))
+                .background(SwiftUI.Color.tnBg3, in: RoundedRectangle(cornerRadius: 6))
             }
 
             HStack(spacing: 12) {
@@ -152,7 +152,7 @@ struct ShellSettingsTab: View {
             .controlSize(.small)
         }
         .padding(8)
-        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 6))
+        .background(SwiftUI.Color.tnBg3, in: RoundedRectangle(cornerRadius: 6))
     }
 
     private func refresh() {
@@ -250,7 +250,7 @@ struct SnippetsSettingsTab: View {
                 }
                 .padding(.vertical, 6)
             }
-            .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 6))
+            .background(SwiftUI.Color.tnBg3, in: RoundedRectangle(cornerRadius: 6))
         }
         .padding(20)
         .sheet(isPresented: $showAdd) {
@@ -324,7 +324,7 @@ struct SnippetSettingsRow: View {
                             .font(.system(size: 9, weight: .semibold))
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 5).padding(.vertical, 1)
-                            .background(Capsule().fill(Color.secondary.opacity(0.18)))
+                            .background(Capsule().fill(SwiftUI.Color.tnBg4))
                     } else {
                         Text("project")
                             .font(.system(size: 9, weight: .semibold))
@@ -354,7 +354,7 @@ struct SnippetSettingsRow: View {
             }
         }
         .padding(8)
-        .background(hover ? Color.primary.opacity(0.07) : Color.clear, in: RoundedRectangle(cornerRadius: 5))
+        .background(hover ? SwiftUI.Color.tnBg4 : Color.clear, in: RoundedRectangle(cornerRadius: 5))
         .onHover { hover = $0 }
     }
 }
@@ -404,7 +404,7 @@ struct ClaudeSettingsTab: View {
                     .textSelection(.enabled)
                     .padding(10)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 6))
+                    .background(SwiftUI.Color.tnBg3, in: RoundedRectangle(cornerRadius: 6))
             }
 
             VStack(alignment: .leading, spacing: 6) {
@@ -439,7 +439,7 @@ struct ClaudeSettingsTab: View {
                         .padding(8)
                 }
                 .frame(minHeight: 200, maxHeight: .infinity)
-                .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 6))
+                .background(SwiftUI.Color.tnBg3, in: RoundedRectangle(cornerRadius: 6))
             }
         }
         .padding(20)
@@ -579,7 +579,7 @@ struct StorageRow: View {
         let exists = FileManager.default.fileExists(atPath: expanded)
         HStack(spacing: 10) {
             Image(systemName: exists ? "doc.text.fill" : "doc.text")
-                .foregroundStyle(exists ? Color.accentColor : Color.secondary.opacity(0.5))
+                .foregroundStyle(exists ? Color.accentColor : SwiftUI.Color.tnFg3)
             VStack(alignment: .leading, spacing: 2) {
                 Text(name).font(.system(size: 13, weight: .medium))
                 Text(path)
@@ -605,7 +605,7 @@ struct StorageRow: View {
             }
         }
         .padding(8)
-        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 6))
+        .background(SwiftUI.Color.tnBg3, in: RoundedRectangle(cornerRadius: 6))
     }
 }
 

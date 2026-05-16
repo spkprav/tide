@@ -19,7 +19,7 @@ struct HiddenTabGridView: View {
             }
             .padding(8)
         }
-        .background(Color.black)
+        .background(SwiftUI.Color.tnBg)
     }
 
     private func columnCount(_ n: Int) -> Int {
@@ -71,14 +71,14 @@ struct HiddenPaneCell: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(Color(white: 0.10))
+            .background(SwiftUI.Color.tnBg2)
 
             HiddenTerminalRepresentable(sessionID: hidden.id, session: session)
-                .background(Color.black)
+                .background(SwiftUI.Color.tnBg)
         }
-        .background(Color.black)
+        .background(SwiftUI.Color.tnBg)
         .overlay(
-            Rectangle().stroke(hover ? Color.accentColor.opacity(0.6) : Color.secondary.opacity(0.25), lineWidth: 1)
+            Rectangle().stroke(hover ? Color.accentColor.opacity(0.6) : SwiftUI.Color.tnLine, lineWidth: 1)
         )
         .onHover { hover = $0 }
     }

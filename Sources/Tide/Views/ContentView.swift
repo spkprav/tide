@@ -130,6 +130,6 @@ struct EmptyStateView: View {
                 .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .underPageBackgroundColor))
+        .background(SwiftUI.Color.tnBg)
     }
 }

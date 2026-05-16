@@ -22,7 +22,7 @@ struct StatsView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(Color(white: 0.10))
+            .background(SwiftUI.Color.tnBg2)
             .overlay(alignment: .bottom) {
                 Rectangle().fill(Color.black.opacity(0.3)).frame(height: 1)
             }
@@ -41,7 +41,7 @@ struct StatsView: View {
                         .foregroundStyle(.tertiary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.black)
+                .background(SwiftUI.Color.tnBg)
             } else {
                 ScrollView {
                     LazyVStack(spacing: 0) {
@@ -51,7 +51,7 @@ struct StatsView: View {
                         }
                     }
                 }
-                .background(Color.black)
+                .background(SwiftUI.Color.tnBg)
             }
         }
     }
@@ -90,7 +90,7 @@ struct StatBadge: View {
                 .foregroundStyle(color)
         }
         .padding(.horizontal, 8).padding(.vertical, 4)
-        .background(Capsule().fill(Color.primary.opacity(0.07)))
+        .background(Capsule().fill(SwiftUI.Color.tnBg4))
     }
 }
 
@@ -188,7 +188,7 @@ struct MiniBarChart: View {
                 ForEach(Array(buckets.enumerated()), id: \.offset) { _, val in
                     let h = max(2, CGFloat(val / maxVal) * geo.size.height)
                     Rectangle()
-                        .fill(val > 0 ? color.opacity(0.8) : Color.primary.opacity(0.10))
+                        .fill(val > 0 ? color.opacity(0.8) : SwiftUI.Color.tnBg4)
                         .frame(width: barWidth, height: h)
                 }
             }

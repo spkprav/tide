@@ -32,7 +32,7 @@ struct ActiveSessionsView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(Color(white: 0.10))
+            .background(SwiftUI.Color.tnBg2)
             .overlay(alignment: .bottom) {
                 Rectangle().fill(Color.black.opacity(0.3)).frame(height: 1)
             }
@@ -50,7 +50,7 @@ struct ActiveSessionsView: View {
                         .foregroundStyle(.tertiary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.black)
+                .background(SwiftUI.Color.tnBg)
             } else {
                 ScrollView {
                     LazyVGrid(
@@ -67,7 +67,7 @@ struct ActiveSessionsView: View {
                     }
                     .padding(8)
                 }
-                .background(Color.black)
+                .background(SwiftUI.Color.tnBg)
             }
         }
     }
@@ -174,7 +174,7 @@ struct GlobalPaneCell: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color(white: hover ? 0.13 : 0.10))
+                    .fill(hover ? SwiftUI.Color.tnBg4 : SwiftUI.Color.tnBg2)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)

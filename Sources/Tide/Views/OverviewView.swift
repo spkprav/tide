@@ -40,7 +40,7 @@ struct OverviewView: View {
                 }
             }
         }
-        .background(Color.black)
+        .background(SwiftUI.Color.tnBg)
         .onAppear {
             if columns.isEmpty { refresh() }
         }
@@ -86,7 +86,7 @@ struct OverviewView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(Color(white: 0.10))
+        .background(SwiftUI.Color.tnBg2)
     }
 
     private var kanbanPane: some View {
@@ -102,7 +102,7 @@ struct OverviewView: View {
             .frame(maxHeight: .infinity, alignment: .top)
         }
         .frame(maxHeight: .infinity)
-        .background(Color.black)
+        .background(SwiftUI.Color.tnBg)
     }
 
     private var prsSidebar: some View {
@@ -120,7 +120,7 @@ struct OverviewView: View {
                 Spacer()
             }
             .padding(.horizontal, 12).padding(.vertical, 8)
-            .background(Color(white: 0.08))
+            .background(SwiftUI.Color.tnBg2)
 
             if filteredPRs.isEmpty {
                 Spacer()
@@ -139,7 +139,7 @@ struct OverviewView: View {
                 }
             }
         }
-        .background(Color.black)
+        .background(SwiftUI.Color.tnBg)
     }
 
     private var emptyView: some View {
@@ -307,10 +307,10 @@ struct KanbanColumn: View {
             content
         }
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(Color(white: 0.07), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(SwiftUI.Color.tnBg2, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(Color.white.opacity(0.05))
+                .stroke(SwiftUI.Color.tnLine)
         )
     }
 
@@ -344,7 +344,7 @@ struct KanbanColumn: View {
             }
         }
         .padding(.horizontal, 10).padding(.vertical, 8)
-        .background(Color(white: 0.11))
+        .background(SwiftUI.Color.tnBg3)
         .overlay(alignment: .bottom) {
             Rectangle().fill(column.project.color.opacity(0.4)).frame(height: 1)
         }
@@ -458,7 +458,7 @@ struct KanbanCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(Color(white: hover ? 0.14 : 0.10))
+                    .fill(hover ? SwiftUI.Color.tnBg4 : SwiftUI.Color.tnBg2)
             )
             .overlay(alignment: .leading) {
                 Rectangle()
@@ -468,7 +468,7 @@ struct KanbanCard: View {
             }
             .overlay(
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .stroke(hover ? projectColor.opacity(0.6) : Color.white.opacity(0.06))
+                    .stroke(hover ? projectColor.opacity(0.6) : SwiftUI.Color.tnLine)
             )
         }
         .buttonStyle(.plain)
@@ -595,7 +595,7 @@ struct OverviewPRRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(Color(white: hover ? 0.13 : 0.10))
+                    .fill(hover ? SwiftUI.Color.tnBg4 : SwiftUI.Color.tnBg2)
             )
             .overlay(alignment: .leading) {
                 Rectangle()
@@ -604,7 +604,7 @@ struct OverviewPRRow: View {
             }
             .overlay(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .stroke(hover ? Color.purple.opacity(0.55) : Color.white.opacity(0.06))
+                    .stroke(hover ? Color.purple.opacity(0.55) : SwiftUI.Color.tnLine)
             )
         }
         .buttonStyle(.plain)

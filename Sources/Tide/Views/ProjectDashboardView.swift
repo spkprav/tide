@@ -55,7 +55,7 @@ struct ProjectDashboardView: View {
                 }
             }
         }
-        .background(Color.black)
+        .background(SwiftUI.Color.tnBg)
         .onAppear {
             if sections.isEmpty { detectAndLoad() }
         }
@@ -129,7 +129,7 @@ struct ProjectDashboardView: View {
             .disabled(loading)
         }
         .padding(.horizontal, 14).padding(.vertical, 8)
-        .background(Color(white: 0.10))
+        .background(SwiftUI.Color.tnBg2)
     }
 
     private var repoPickerBar: some View {
@@ -145,7 +145,7 @@ struct ProjectDashboardView: View {
             }
             .padding(.horizontal, 12).padding(.vertical, 6)
         }
-        .background(Color(white: 0.07))
+        .background(SwiftUI.Color.tnBg2)
         .overlay(alignment: .bottom) {
             Rectangle().fill(Color.black.opacity(0.3)).frame(height: 1)
         }
@@ -307,7 +307,7 @@ struct IssuesPanel: View {
                 }
             }
             .padding(.horizontal, 12).padding(.vertical, 8)
-            .background(Color(white: 0.08))
+            .background(SwiftUI.Color.tnBg2)
 
             if issues.isEmpty && !loading {
                 Spacer()
@@ -326,7 +326,7 @@ struct IssuesPanel: View {
                 }
             }
         }
-        .background(Color.black)
+        .background(SwiftUI.Color.tnBg)
     }
 }
 
@@ -372,11 +372,11 @@ struct IssueRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(Color(white: hover ? 0.13 : 0.10))
+                    .fill(hover ? SwiftUI.Color.tnBg4 : SwiftUI.Color.tnBg2)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .stroke(hover ? Color.accentColor.opacity(0.5) : Color.white.opacity(0.06))
+                    .stroke(hover ? Color.accentColor.opacity(0.5) : SwiftUI.Color.tnLine)
             )
         }
         .buttonStyle(.plain)
@@ -412,7 +412,7 @@ struct PRsPanel: View {
                 }
             }
             .padding(.horizontal, 12).padding(.vertical, 8)
-            .background(Color(white: 0.08))
+            .background(SwiftUI.Color.tnBg2)
 
             if prs.isEmpty && !loading {
                 Spacer()
@@ -431,7 +431,7 @@ struct PRsPanel: View {
                 }
             }
         }
-        .background(Color.black)
+        .background(SwiftUI.Color.tnBg)
     }
 }
 
@@ -485,11 +485,11 @@ struct PRRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(Color(white: hover ? 0.13 : 0.10))
+                    .fill(hover ? SwiftUI.Color.tnBg4 : SwiftUI.Color.tnBg2)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .stroke(hover ? Color.purple.opacity(0.55) : Color.white.opacity(0.06))
+                    .stroke(hover ? Color.purple.opacity(0.55) : SwiftUI.Color.tnLine)
             )
         }
         .buttonStyle(.plain)

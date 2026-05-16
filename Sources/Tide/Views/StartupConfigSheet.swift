@@ -19,49 +19,66 @@ struct StartupConfigSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Setup for \(project.name)").font(.title2.weight(.semibold))
-                Spacer()
-                Menu {
-                    Button("Export Setup…", action: exportConfig)
-                    Button("Import Setup…", action: importConfig)
-                } label: {
-                    Image(systemName: "arrow.up.arrow.down.square")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Startup configuration")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(SwiftUI.Color.tnFg)
+                    Text(project.name)
+                        .font(.system(size: 11))
+                        .foregroundStyle(SwiftUI.Color.tnFg3)
                 }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
+                Spacer()
+                Button(action: exportConfig) {
+                    Label("Export", systemImage: "square.and.arrow.up")
+                        .font(.system(size: 11))
+                }
+                .buttonStyle(TideChipButton())
+                Button(action: importConfig) {
+                    Label("Import", systemImage: "square.and.arrow.down")
+                        .font(.system(size: 11))
+                }
+                .buttonStyle(TideChipButton())
             }
 
-            HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Name").font(.callout).foregroundStyle(.secondary)
-                    TextField("default", text: $config.name)
-                        .textFieldStyle(.roundedBorder)
+            HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Name")
+                        .font(.system(size: 11))
+                        .foregroundStyle(SwiftUI.Color.tnFg3)
+                    TideTextField(placeholder: "default", text: $config.name)
                 }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Layout").font(.callout).foregroundStyle(.secondary)
-                    Picker("", selection: $config.layout) {
-                        ForEach(StartupLayout.allCases) { l in
-                            Text(l.displayName).tag(l)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Layout")
+                        .font(.system(size: 11))
+                        .foregroundStyle(SwiftUI.Color.tnFg3)
+                    LayoutPicker(layout: $config.layout)
+                        .onChange(of: config.layout) { _, _ in
+                            config.ensurePaneCount()
                         }
-                    }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
-                    .onChange(of: config.layout) { _, _ in
-                        config.ensurePaneCount()
-                    }
                 }
             }
 
             LayoutVisualizer(layout: config.layout, panes: config.panes)
                 .frame(height: 100)
 
-            Text("Commands").font(.callout).foregroundStyle(.secondary)
+            HStack {
+                Text("Pane commands")
+                    .font(.system(size: 11))
+                    .foregroundStyle(SwiftUI.Color.tnFg3)
+                Text("\(config.panes.count)")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(SwiftUI.Color.tnFg3)
+                    .padding(.horizontal, 6).padding(.vertical, 1)
+                    .background(Capsule().fill(SwiftUI.Color.tnBg))
+                Spacer()
+            }
 
             ScrollView {
                 VStack(spacing: 8) {
                     ForEach(Array(config.panes.enumerated()), id: \.offset) { idx, _ in
                         PaneEditor(
                             position: config.layout.positionLabel(for: idx),
+                            accent: paneAccent(idx),
                             pane: $config.panes[idx]
                         )
                     }
@@ -73,16 +90,25 @@ struct StartupConfigSheet: View {
 
             HStack {
                 Spacer()
-                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button("Cancel") { dismiss() }
+                    .buttonStyle(TideSecondaryButton())
+                    .keyboardShortcut(.cancelAction)
                 Button("Save") {
                     onSave(config)
                     dismiss()
                 }
+                .buttonStyle(TidePrimaryButton())
                 .keyboardShortcut(.defaultAction)
             }
         }
-        .padding(20)
-        .frame(width: 580, height: 660)
+        .padding(22)
+        .frame(width: 620, height: 700)
+        .background(SwiftUI.Color.tnBg3)
+    }
+
+    private func paneAccent(_ i: Int) -> SwiftUI.Color {
+        let palette: [SwiftUI.Color] = [.tnBlue, .tnGreen, .tnPurple, .tnOrange, .tnCyan, .tnYellow]
+        return palette[i % palette.count]
     }
 
     private func exportConfig() {
@@ -112,28 +138,66 @@ struct StartupConfigSheet: View {
     }
 }
 
+struct LayoutPicker: View {
+    @Binding var layout: StartupLayout
+
+    var body: some View {
+        Menu {
+            ForEach(StartupLayout.allCases) { l in
+                Button(l.displayName) { layout = l }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Text(layout.displayName)
+                    .font(.system(size: 13))
+                    .foregroundStyle(SwiftUI.Color.tnFg)
+                Spacer()
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(SwiftUI.Color.tnFg3)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(SwiftUI.Color.tnBg)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(SwiftUI.Color.tnLine, lineWidth: 1)
+            )
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+    }
+}
+
 struct PaneEditor: View {
     let position: String
+    let accent: SwiftUI.Color
     @Binding var pane: StartupPane
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
                 Text(position)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 6).padding(.vertical, 2)
-                    .background(Capsule().fill(Color.accentColor.opacity(0.85)))
-                TextField("pane name (e.g. server)", text: $pane.name)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.system(size: 12))
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(SwiftUI.Color.tnBg)
+                    .padding(.horizontal, 7).padding(.vertical, 2)
+                    .background(Capsule().fill(accent))
+                TideTextField(placeholder: "pane name (e.g. server)", text: $pane.name)
             }
-            TextField("command (e.g. bundle exec rails s)", text: $pane.command)
-                .textFieldStyle(.roundedBorder)
-                .font(.system(.body, design: .monospaced))
+            TideTextField(placeholder: "command (e.g. bundle exec rails s)", text: $pane.command, mono: true)
         }
-        .padding(8)
-        .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.04)))
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(SwiftUI.Color.tnBg.opacity(0.5))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .strokeBorder(SwiftUI.Color.tnLine, lineWidth: 1)
+        )
     }
 }
 
@@ -144,8 +208,12 @@ struct LayoutVisualizer: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                RoundedRectangle(cornerRadius: 6).stroke(Color.secondary.opacity(0.3))
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(SwiftUI.Color.tnBg)
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(SwiftUI.Color.tnLine, lineWidth: 1)
                 content(in: geo.size)
+                    .padding(6)
             }
         }
     }
@@ -154,52 +222,28 @@ struct LayoutVisualizer: View {
     private func content(in size: CGSize) -> some View {
         switch layout {
         case .singlePane:
-            paneBox(label: paneLabel(0))
-                .frame(width: size.width, height: size.height)
+            paneBox(0)
         case .grid2x2:
-            VStack(spacing: 2) {
-                HStack(spacing: 2) {
-                    paneBox(label: paneLabel(0))
-                    paneBox(label: paneLabel(1))
-                }
-                HStack(spacing: 2) {
-                    paneBox(label: paneLabel(2))
-                    paneBox(label: paneLabel(3))
-                }
+            VStack(spacing: 3) {
+                HStack(spacing: 3) { paneBox(0); paneBox(1) }
+                HStack(spacing: 3) { paneBox(2); paneBox(3) }
             }
-            .padding(4)
         case .bigTopThreeBottom:
-            VStack(spacing: 2) {
-                paneBox(label: paneLabel(0))
+            VStack(spacing: 3) {
+                paneBox(0).frame(maxHeight: .infinity)
+                HStack(spacing: 3) { paneBox(1); paneBox(2); paneBox(3) }
                     .frame(maxHeight: .infinity)
-                HStack(spacing: 2) {
-                    paneBox(label: paneLabel(1))
-                    paneBox(label: paneLabel(2))
-                    paneBox(label: paneLabel(3))
-                }
-                .frame(maxHeight: .infinity)
             }
-            .padding(4)
         case .leftMainRightStacked:
-            HStack(spacing: 2) {
-                paneBox(label: paneLabel(0))
+            HStack(spacing: 3) {
+                paneBox(0).frame(maxWidth: .infinity)
+                VStack(spacing: 3) { paneBox(1); paneBox(2); paneBox(3) }
                     .frame(maxWidth: .infinity)
-                VStack(spacing: 2) {
-                    paneBox(label: paneLabel(1))
-                    paneBox(label: paneLabel(2))
-                    paneBox(label: paneLabel(3))
-                }
-                .frame(maxWidth: .infinity)
             }
-            .padding(4)
         case .rowsStacked:
-            VStack(spacing: 2) {
-                paneBox(label: paneLabel(0))
-                paneBox(label: paneLabel(1))
-                paneBox(label: paneLabel(2))
-                paneBox(label: paneLabel(3))
+            VStack(spacing: 3) {
+                paneBox(0); paneBox(1); paneBox(2); paneBox(3)
             }
-            .padding(4)
         }
     }
 
@@ -208,13 +252,20 @@ struct LayoutVisualizer: View {
         return layout.positionLabel(for: idx)
     }
 
-    private func paneBox(label: String) -> some View {
+    private func accent(_ idx: Int) -> SwiftUI.Color {
+        let palette: [SwiftUI.Color] = [.tnBlue, .tnGreen, .tnPurple, .tnOrange, .tnCyan, .tnYellow]
+        return palette[idx % palette.count]
+    }
+
+    private func paneBox(_ idx: Int) -> some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 4)
-                .fill(Color.accentColor.opacity(0.12))
-            Text(label)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.primary)
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .fill(accent(idx).opacity(0.18))
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .strokeBorder(accent(idx).opacity(0.4), lineWidth: 1)
+            Text(paneLabel(idx))
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(SwiftUI.Color.tnFg)
                 .lineLimit(1)
         }
     }

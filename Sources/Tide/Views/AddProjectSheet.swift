@@ -26,28 +26,24 @@ struct AddProjectSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(editing == nil ? "Add Project" : "Edit Project")
-                .font(.title2.weight(.semibold))
+            Text(editing == nil ? "New project" : "Edit project")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(SwiftUI.Color.tnFg)
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Name").font(.callout).foregroundStyle(.secondary)
-                TextField("e.g. reefstore", text: $name)
-                    .textFieldStyle(.roundedBorder)
+            sheetField(label: "Name") {
+                TideTextField(placeholder: "e.g. acme-web", text: $name)
             }
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Folder").font(.callout).foregroundStyle(.secondary)
-                HStack(spacing: 6) {
-                    TextField("/path/to/project", text: $path)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.system(.body, design: .monospaced))
+            sheetField(label: "Working directory") {
+                HStack(spacing: 8) {
+                    TideTextField(placeholder: "/path/to/project", text: $path, mono: true)
                     Button("Choose…") { pickFolder() }
+                        .buttonStyle(TideSecondaryButton())
                 }
             }
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Color").font(.callout).foregroundStyle(.secondary)
-                HStack(spacing: 8) {
+            sheetField(label: "Color tag") {
+                HStack(spacing: 10) {
                     ForEach(presetColors, id: \.self) { hex in
                         ColorSwatch(hex: hex, selected: hex == colorHex)
                             .onTapGesture { colorHex = hex }
@@ -60,14 +56,27 @@ struct AddProjectSheet: View {
             HStack {
                 Spacer()
                 Button("Cancel") { dismiss() }
+                    .buttonStyle(TideSecondaryButton())
                     .keyboardShortcut(.cancelAction)
                 Button(editing == nil ? "Add" : "Save") { save() }
+                    .buttonStyle(TidePrimaryButton())
                     .keyboardShortcut(.defaultAction)
                     .disabled(!isValid)
             }
         }
-        .padding(20)
-        .frame(width: 460, height: 320)
+        .padding(22)
+        .frame(width: 480, height: 340)
+        .background(SwiftUI.Color.tnBg3)
+    }
+
+    @ViewBuilder
+    private func sheetField<Content: View>(label: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label)
+                .font(.system(size: 11))
+                .foregroundStyle(SwiftUI.Color.tnFg3)
+            content()
+        }
     }
 
     private var isValid: Bool {
@@ -108,12 +117,47 @@ struct ColorSwatch: View {
 
     var body: some View {
         Circle()
-            .fill(Color(hex: hex) ?? .gray)
-            .frame(width: 22, height: 22)
+            .fill(SwiftUI.Color(hex: hex) ?? .gray)
+            .frame(width: 24, height: 24)
             .overlay(
                 Circle()
-                    .stroke(Color.primary.opacity(selected ? 0.9 : 0.1), lineWidth: selected ? 2 : 1)
+                    .strokeBorder(SwiftUI.Color.white.opacity(selected ? 1 : 0), lineWidth: 2)
+                    .padding(2)
+            )
+            .overlay(
+                Circle()
+                    .strokeBorder(
+                        selected ? SwiftUI.Color(hex: hex) ?? .gray : SwiftUI.Color.tnLine,
+                        lineWidth: selected ? 2 : 1
+                    )
             )
             .contentShape(Circle())
+    }
+}
+
+// Reusable styled text field matching mockup inputs.
+struct TideTextField: View {
+    let placeholder: String
+    @Binding var text: String
+    var mono: Bool = false
+
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        TextField(placeholder, text: $text)
+            .textFieldStyle(.plain)
+            .font(mono ? .system(size: 12, design: .monospaced) : .system(size: 13))
+            .foregroundStyle(SwiftUI.Color.tnFg)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(SwiftUI.Color.tnBg)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(focused ? SwiftUI.Color.tnBlue : SwiftUI.Color.tnLine, lineWidth: 1)
+            )
+            .focused($focused)
     }
 }

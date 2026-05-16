@@ -48,7 +48,7 @@ struct TerminalAreaView: View {
                 StartScreen(project: project, session: session)
             }
         }
-        .background(Color.black)
+        .background(SwiftUI.Color.tnBg)
         .onReceive(NotificationCenter.default.publisher(for: .splitVertical)) { _ in
             guard !session.isShowingHidden else { return }
             session.activeTab?.split(axis: .vertical)
