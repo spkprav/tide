@@ -87,6 +87,11 @@ struct SplitContainerView: View {
         case .leaf(let sessionID):
             TerminalLeafView(sessionID: sessionID, tab: tab)
         case .split(let axis, let children):
+            // No .id(structureKey) here — that would tear down the WHOLE split
+            // (and all its terminals) any time the subtree shape changed,
+            // even for an unrelated pane closing inside a sibling subtree.
+            // ForEach + SplitNode.id (Identifiable) is enough to diff cleanly
+            // and keep untouched panes mounted.
             if axis == .vertical {
                 HSplitView {
                     ForEach(children) { child in
@@ -94,7 +99,6 @@ struct SplitContainerView: View {
                             .frame(minWidth: 80)
                     }
                 }
-                .id(Self.structureKey(children))
             } else {
                 VSplitView {
                     ForEach(children) { child in
@@ -102,22 +106,7 @@ struct SplitContainerView: View {
                             .frame(minHeight: 60)
                     }
                 }
-                .id(Self.structureKey(children))
             }
-        }
-    }
-
-    static func structureKey(_ children: [SplitNode]) -> String {
-        children.map { shape($0) }.joined(separator: "|")
-    }
-
-    static func shape(_ node: SplitNode) -> String {
-        switch node.content {
-        case .leaf:
-            return "L"
-        case .split(let axis, let kids):
-            let a = axis == .vertical ? "V" : "H"
-            return "\(a)(\(kids.map { shape($0) }.joined(separator: ",")))"
         }
     }
 }
