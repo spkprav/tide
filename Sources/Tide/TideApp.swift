@@ -4,12 +4,21 @@ import SwiftUI
 struct TideApp: App {
     @State private var store = ProjectStore()
     @State private var snippets = SnippetStore()
+    @State private var commandUsage = CommandUsageStore()
     @State private var startups = StartupStore()
     @State private var notifier = NotificationWatcher()
     @State private var tracker = UsageTracker()
+    @State private var waiters = WaitingPaneStore()
+    @State private var snapshotStore = SessionSnapshotStore()
+    @State private var serviceStore: ServiceStore
+    @State private var serviceSupervisor: ServiceSupervisor
+    @State private var snapshotTimer: Timer?
 
     init() {
         NSWindow.allowsAutomaticWindowTabbing = false
+        let svcStore = ServiceStore()
+        _serviceStore = State(initialValue: svcStore)
+        _serviceSupervisor = State(initialValue: ServiceSupervisor(store: svcStore))
     }
 
     var body: some Scene {
@@ -17,25 +26,41 @@ struct TideApp: App {
             ContentView()
                 .environment(store)
                 .environment(snippets)
+                .environment(commandUsage)
                 .environment(startups)
                 .environment(tracker)
+                .environment(waiters)
+                .environment(snapshotStore)
+                .environment(serviceStore)
+                .environment(serviceSupervisor)
                 .frame(minWidth: 900, minHeight: 560)
                 .onAppear {
                     NotificationWatcher.requestPermission()
                     notifier.onPaneDone = { sessionID, message in
                         handlePaneDone(sessionID: sessionID, message: message)
                     }
+                    notifier.onPaneWaiting = { sessionID, message in
+                        handlePaneWaiting(sessionID: sessionID, message: message)
+                    }
                     notifier.start()
+                    serviceSupervisor.startAutoStart()
+                    startSnapshotTimer()
+                    installTerminateHook()
                 }
         }
-        .windowToolbarStyle(.unified)
+        .windowStyle(.hiddenTitleBar)
 
         Settings {
             SettingsView()
                 .environment(store)
                 .environment(snippets)
+                .environment(commandUsage)
                 .environment(startups)
                 .environment(tracker)
+                .environment(waiters)
+                .environment(snapshotStore)
+                .environment(serviceStore)
+                .environment(serviceSupervisor)
         }
         .commands {
             CommandGroup(after: .appInfo) {
@@ -95,7 +120,40 @@ extension Notification.Name {
 
 extension TideApp {
     @MainActor
+    private func startSnapshotTimer() {
+        guard snapshotTimer == nil else { return }
+        snapshotTimer = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { _ in
+            Task { @MainActor in
+                let snap = SessionSnapshotBuilder.capture(store: store)
+                if !snap.projects.isEmpty {
+                    snapshotStore.save(snap)
+                }
+            }
+        }
+    }
+
+    @MainActor
+    private func installTerminateHook() {
+        // Save once more on app quit so the snapshot reflects state up to the
+        // very last second the user worked in Tide.
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.willTerminateNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            MainActor.assumeIsolated {
+                let snap = SessionSnapshotBuilder.capture(store: store)
+                if !snap.projects.isEmpty {
+                    snapshotStore.save(snap)
+                }
+            }
+        }
+    }
+
+    @MainActor
     private func handlePaneDone(sessionID: UUID, message: String?) {
+        // Claude finished → drop any pending wait card for this pane.
+        waiters.dismiss(id: sessionID)
         for project in store.projects {
             guard let session = store.sessions[project.id] else { continue }
             for tab in session.tabs where tab.terminals[sessionID] != nil {
@@ -115,6 +173,45 @@ extension TideApp {
                 NotificationWatcher.deliver(
                     title: "\(project.name) · \(title)",
                     body: message ?? "Hidden pane finished"
+                )
+                return
+            }
+        }
+    }
+
+    @MainActor
+    private func handlePaneWaiting(sessionID: UUID, message: String?) {
+        for project in store.projects {
+            guard let session = store.sessions[project.id] else { continue }
+            for tab in session.tabs where tab.terminals[sessionID] != nil {
+                let paneTitle = tab.leafTitles[sessionID] ?? "pane"
+                let body = message ?? "Waiting for your input"
+                waiters.upsert(WaitingPane(
+                    id: sessionID,
+                    projectName: project.name,
+                    paneTitle: paneTitle,
+                    message: body,
+                    startedAt: Date()
+                ))
+                NotificationWatcher.deliver(
+                    title: "\(project.name) · \(paneTitle)",
+                    body: body
+                )
+                return
+            }
+            if session.hiddenTerminals[sessionID] != nil {
+                let title = session.hiddenPanes.first(where: { $0.id == sessionID })?.title ?? "hidden pane"
+                let body = message ?? "Waiting for your input"
+                waiters.upsert(WaitingPane(
+                    id: sessionID,
+                    projectName: project.name,
+                    paneTitle: title,
+                    message: body,
+                    startedAt: Date()
+                ))
+                NotificationWatcher.deliver(
+                    title: "\(project.name) · \(title)",
+                    body: body
                 )
                 return
             }

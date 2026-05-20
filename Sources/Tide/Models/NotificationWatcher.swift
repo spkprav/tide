@@ -13,6 +13,7 @@ final class NotificationWatcher {
     }()
 
     var onPaneDone: ((UUID, String?) -> Void)?
+    var onPaneWaiting: ((UUID, String?) -> Void)?
     private var eventStream: FSEventStreamRef?
 
     func start() {
@@ -61,13 +62,30 @@ final class NotificationWatcher {
         guard let files = try? FileManager.default.contentsOfDirectory(atPath: Self.notifyDir) else { return }
         for file in files where !file.hasPrefix(".") {
             let fullPath = "\(Self.notifyDir)/\(file)"
-            if let uuid = UUID(uuidString: file) {
-                let raw = try? String(contentsOfFile: fullPath, encoding: .utf8)
-                let msg = raw?.trimmingCharacters(in: .whitespacesAndNewlines)
-                onPaneDone?(uuid, (msg?.isEmpty == false) ? msg : nil)
+            let raw = try? String(contentsOfFile: fullPath, encoding: .utf8)
+            let body = raw?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if file.hasSuffix(".wait"),
+               let uuid = UUID(uuidString: String(file.dropLast(".wait".count))) {
+                let msg = Self.extractMessage(fromPayload: body)
+                onPaneWaiting?(uuid, msg)
+            } else if let uuid = UUID(uuidString: file) {
+                onPaneDone?(uuid, (body?.isEmpty == false) ? body : nil)
             }
             try? FileManager.default.removeItem(atPath: fullPath)
         }
+    }
+
+    /// Claude Code Notification hook delivers a JSON payload on stdin. Extract a
+    /// human-readable message; fall back to the raw body if JSON parsing fails.
+    private static func extractMessage(fromPayload payload: String?) -> String? {
+        guard let payload, !payload.isEmpty else { return nil }
+        if let data = payload.data(using: .utf8),
+           let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            if let msg = obj["message"] as? String, !msg.isEmpty { return msg }
+            if let title = obj["title"] as? String, !title.isEmpty { return title }
+        }
+        return payload
     }
 
     nonisolated static func requestPermission() {

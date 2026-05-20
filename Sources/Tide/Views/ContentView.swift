@@ -5,12 +5,14 @@ import SwiftTerm
 struct ContentView: View {
     @Environment(ProjectStore.self) private var store
     @Environment(UsageTracker.self) private var tracker
+    @Environment(WaitingPaneStore.self) private var waiters
     @Environment(\.scenePhase) private var scenePhase
     @State private var clickMonitor: Any?
 
     var body: some View {
         @Bindable var store = store
         VStack(spacing: 0) {
+            RestoreSessionBanner()
             NavigationSplitView {
                 SidebarView()
                     .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 360)
@@ -34,6 +36,9 @@ struct ContentView: View {
 
             SnippetsBar()
         }
+        .overlay(alignment: .topTrailing) {
+            WaitingPanesOverlay()
+        }
         .onAppear {
             updateFocus(phase: scenePhase, id: store.selectedID)
             installClickMonitor()
@@ -52,12 +57,14 @@ struct ContentView: View {
 
     private func installClickMonitor() {
         guard clickMonitor == nil else { return }
-        clickMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [storeRef = store] event in
+        clickMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [storeRef = store, waitersRef = waiters] event in
+            // hitTest expects a point in the receiver's SUPERVIEW coordinate space.
+            // For NSWindow.contentView that's window-local, unflipped — same space
+            // as event.locationInWindow. Converting first inverted Y on flipped
+            // views and made every click target the mirrored pane.
             if let win = event.window, let cv = win.contentView {
-                let loc = event.locationInWindow
-                let pointInCV = cv.convert(loc, from: nil)
-                if let hit = cv.hitTest(pointInCV) {
-                    activatePaneIfTerminal(hit, store: storeRef)
+                if let hit = cv.hitTest(event.locationInWindow) {
+                    activatePaneIfTerminal(hit, store: storeRef, waiters: waitersRef)
                 }
             }
             return event
@@ -71,7 +78,7 @@ struct ContentView: View {
         }
     }
 
-    private func activatePaneIfTerminal(_ view: NSView, store: ProjectStore) {
+    private func activatePaneIfTerminal(_ view: NSView, store: ProjectStore, waiters: WaitingPaneStore) {
         var v: NSView? = view
         while let current = v {
             if let term = current as? LocalProcessTerminalView {
@@ -85,6 +92,7 @@ struct ContentView: View {
                             if session.activeTabID != tab.id {
                                 session.activeTabID = tab.id
                             }
+                            waiters.dismiss(id: sid)
                             return
                         }
                     }

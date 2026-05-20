@@ -16,6 +16,7 @@ enum TideShellIntegration {
         """
         \(sentinelBegin)
         # Tide captures commands per pane to ~/.tide/history/<pane>.log
+        # and emits OSC 7 so Tide can track the pane's current working dir.
         # Loaded only when inside a Tide pane (TIDE_PANE_ID is set).
         if [ -n "$TIDE_PANE_ID" ] && [ -n "$ZSH_VERSION" ]; then
           mkdir -p "$HOME/.tide/history" 2>/dev/null
@@ -23,7 +24,12 @@ enum TideShellIntegration {
           __tide_capture() {
             print -r -- "$(date -u +%FT%TZ)\\t$1" >> "$HOME/.tide/history/$TIDE_PANE_ID.log"
           }
+          __tide_pwd() {
+            printf '\\033]7;file://%s%s\\033\\\\' "${HOST:-localhost}" "$PWD"
+          }
           add-zsh-hook preexec __tide_capture 2>/dev/null
+          add-zsh-hook chpwd  __tide_pwd     2>/dev/null
+          __tide_pwd
         fi
         if [ -n "$TIDE_PANE_ID" ] && [ -n "$BASH_VERSION" ]; then
           mkdir -p "$HOME/.tide/history" 2>/dev/null
@@ -32,7 +38,10 @@ enum TideShellIntegration {
             cmd=$(HISTTIMEFORMAT= history 1 | sed 's/^ *[0-9]* *//')
             printf '%s\\t%s\\n' "$(date -u +%FT%TZ)" "$cmd" >> "$HOME/.tide/history/$TIDE_PANE_ID.log"
           }
-          PROMPT_COMMAND="__tide_capture_bash;$PROMPT_COMMAND"
+          __tide_pwd_bash() {
+            printf '\\033]7;file://%s%s\\033\\\\' "${HOSTNAME:-localhost}" "$PWD"
+          }
+          PROMPT_COMMAND="__tide_capture_bash;__tide_pwd_bash;$PROMPT_COMMAND"
         fi
         \(sentinelEnd)
         """

@@ -21,11 +21,7 @@ final class UsageTracker {
     @ObservationIgnored private var saveTimer: Timer?
 
     init() {
-        let support = FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = support.appendingPathComponent("Tide", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        fileURL = dir.appendingPathComponent("usage.json")
+        fileURL = TideStorage.file("usage.json")
         load()
     }
 

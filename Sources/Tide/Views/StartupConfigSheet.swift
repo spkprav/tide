@@ -4,16 +4,23 @@ import UniformTypeIdentifiers
 
 struct StartupConfigSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(ServiceStore.self) private var serviceStore
+    @Environment(ServiceSupervisor.self) private var supervisor
 
     let project: Project
     let onSave: (StartupConfig) -> Void
 
     @State private var config: StartupConfig
+    @State private var promoteToast: String?
 
     init(project: Project, existing: StartupConfig?, onSave: @escaping (StartupConfig) -> Void) {
         self.project = project
         self.onSave = onSave
         _config = State(initialValue: existing ?? StartupConfig(name: "default", layout: .grid2x2, panes: []))
+    }
+
+    private var promotablePaneCount: Int {
+        config.panes.filter { !$0.command.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.count
     }
 
     var body: some View {
@@ -68,7 +75,23 @@ struct StartupConfigSheet: View {
                         .foregroundStyle(SwiftUI.Color.tnFg3)
                         .padding(.horizontal, 6).padding(.vertical, 1)
                         .background(Capsule().fill(SwiftUI.Color.tnBg))
+                    if let toast = promoteToast {
+                        Text(toast)
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(SwiftUI.Color.tnGreen)
+                            .transition(.opacity)
+                    }
                     Spacer()
+                    if promotablePaneCount > 0 {
+                        Button {
+                            promoteAllPanes()
+                        } label: {
+                            Label("Move all to Services", systemImage: "play.rectangle.on.rectangle")
+                                .font(.system(size: 11))
+                        }
+                        .buttonStyle(TideChipButton(tint: SwiftUI.Color.tnGreen))
+                        .help("Convert every non-empty pane into a Service tied to this project's path.")
+                    }
                 }
 
                 ScrollView {
@@ -121,7 +144,8 @@ struct StartupConfigSheet: View {
                     index: idx,
                     position: config.layout.positionLabel(for: idx),
                     accent: Self.paneAccent(idx),
-                    pane: $config.panes[idx]
+                    pane: $config.panes[idx],
+                    onPromote: { promotePane(at: idx) }
                 )
             }
         }
@@ -147,6 +171,76 @@ struct StartupConfigSheet: View {
             enc.outputFormatting = [.prettyPrinted, .sortedKeys]
             if let data = try? enc.encode(config) {
                 try? data.write(to: url, options: .atomic)
+            }
+        }
+    }
+
+    private func promotePane(at idx: Int) {
+        guard idx < config.panes.count else { return }
+        let pane = config.panes[idx]
+        let cmd = pane.command.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cmd.isEmpty else { return }
+        let baseName = pane.name.trimmingCharacters(in: .whitespaces).isEmpty
+            ? "\(project.name) pane \(idx + 1)"
+            : "\(project.name) · \(pane.name)"
+        let name = uniqueServiceName(baseName)
+        let svc = Service(
+            name: name,
+            startCommand: cmd,
+            downCommand: nil,
+            cwd: project.expandedPath,
+            env: [:],
+            autoStart: false,
+            declaredPort: nil
+        )
+        serviceStore.upsert(svc)
+        supervisor.notifyServicesChanged()
+        config.panes[idx].command = ""
+        showToast("Moved “\(name)” to Services")
+    }
+
+    private func promoteAllPanes() {
+        var moved: [String] = []
+        for idx in config.panes.indices {
+            let cmd = config.panes[idx].command.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !cmd.isEmpty else { continue }
+            let pane = config.panes[idx]
+            let baseName = pane.name.trimmingCharacters(in: .whitespaces).isEmpty
+                ? "\(project.name) pane \(idx + 1)"
+                : "\(project.name) · \(pane.name)"
+            let name = uniqueServiceName(baseName, alreadyTaken: moved)
+            let svc = Service(
+                name: name,
+                startCommand: cmd,
+                downCommand: nil,
+                cwd: project.expandedPath,
+                env: [:],
+                autoStart: false,
+                declaredPort: nil
+            )
+            serviceStore.upsert(svc)
+            moved.append(name)
+            config.panes[idx].command = ""
+        }
+        if !moved.isEmpty {
+            supervisor.notifyServicesChanged()
+            showToast("Moved \(moved.count) pane\(moved.count == 1 ? "" : "s") to Services")
+        }
+    }
+
+    private func uniqueServiceName(_ base: String, alreadyTaken extra: [String] = []) -> String {
+        let existing = Set(serviceStore.services.map { $0.name } + extra)
+        if !existing.contains(base) { return base }
+        var i = 2
+        while existing.contains("\(base) \(i)") { i += 1 }
+        return "\(base) \(i)"
+    }
+
+    private func showToast(_ msg: String) {
+        withAnimation(.easeOut(duration: 0.2)) { promoteToast = msg }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+            withAnimation(.easeIn(duration: 0.25)) {
+                if promoteToast == msg { promoteToast = nil }
             }
         }
     }
@@ -258,6 +352,11 @@ struct PaneEditor: View {
     let position: String
     let accent: SwiftUI.Color
     @Binding var pane: StartupPane
+    var onPromote: () -> Void = {}
+
+    private var canPromote: Bool {
+        !pane.command.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -276,6 +375,15 @@ struct PaneEditor: View {
                 Text(position)
                     .font(.system(size: 9))
                     .foregroundStyle(SwiftUI.Color.tnFg3)
+                Button(action: onPromote) {
+                    Label("→ Service", systemImage: "play.rectangle.on.rectangle")
+                        .font(.system(size: 10, weight: .medium))
+                        .labelStyle(.titleAndIcon)
+                }
+                .buttonStyle(TideChipButton(tint: SwiftUI.Color.tnGreen))
+                .disabled(!canPromote)
+                .opacity(canPromote ? 1 : 0.4)
+                .help("Move this pane's command into Services and clear the pane.")
             }
 
             TideTextField(placeholder: "name (e.g. server, tests, logs)", text: $pane.name)

@@ -9,11 +9,7 @@ final class SnippetStore {
     @ObservationIgnored private let fileURL: URL
 
     init() {
-        let support = FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = support.appendingPathComponent("Tide", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        self.fileURL = dir.appendingPathComponent("snippets.json")
+        self.fileURL = TideStorage.file("snippets.json")
         load()
     }
 

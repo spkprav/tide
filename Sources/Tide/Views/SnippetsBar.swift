@@ -1,59 +1,118 @@
 import SwiftUI
 import AppKit
+import SwiftTerm
 
 struct SnippetsBar: View {
     @Environment(SnippetStore.self) private var snippetStore
     @Environment(ProjectStore.self) private var projectStore
+    @Environment(CommandUsageStore.self) private var commandUsage
+    @Environment(ServiceSupervisor.self) private var serviceSupervisor
+
+    enum ChipScope: String, CaseIterable, Identifiable {
+        case project, global
+        var id: String { rawValue }
+        var label: String { self == .project ? "Project" : "Global" }
+        var icon: String { self == .project ? "folder" : "globe" }
+    }
+
+    @AppStorage("Tide.snippetScope") private var scope: ChipScope = .project
 
     @State private var input: String = ""
     @State private var showAdd = false
     @State private var hoveredSnippet: UUID?
+    @State private var hoveredMake: String?
+    @State private var copyFlash: String?
+    @State private var showServices = false
     @FocusState private var inputFocused: Bool
 
     var body: some View {
         VStack(spacing: 8) {
-            // Row 1 — chip pills for relevant snippets + "Save current"
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    ForEach(relevantSnippets) { snippet in
-                        SnippetChip(
-                            snippet: snippet,
-                            hover: hoveredSnippet == snippet.id,
-                            onPick: { send(text: snippet.command, appendNewline: true) },
-                            onRemove: { snippetStore.remove(id: snippet.id) }
-                        )
-                        .onHover { hoveredSnippet = $0 ? snippet.id : nil }
-                    }
-                    Button {
-                        showAdd = true
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "plus").font(.system(size: 9, weight: .bold))
-                            Text(input.trimmingCharacters(in: .whitespaces).isEmpty ? "Save snippet" : "Save current")
-                                .font(.system(size: 11))
-                        }
-                    }
-                    .buttonStyle(TideChipButton(tint: SwiftUI.Color.tnBlue))
-                    .help(input.trimmingCharacters(in: .whitespaces).isEmpty
-                          ? "Save a new snippet" : "Save current input as a snippet")
-                }
-                .padding(.horizontal, 2)
-            }
-            .frame(maxHeight: relevantSnippets.isEmpty && input.isEmpty ? 0 : 28)
-            .opacity(relevantSnippets.isEmpty && input.isEmpty ? 0 : 1)
-
-            // Row 2 — input
+            // Row 1 — scope switch + chip pills (snippets + make targets) + "Save current"
             HStack(spacing: 8) {
+                ScopeSwitch(scope: $scope, projectAvailable: projectStore.selected != nil)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(orderedChips, id: \.key) { chip in
+                            switch chip {
+                            case .snippet(let snippet):
+                                SnippetChip(
+                                    snippet: snippet,
+                                    hover: hoveredSnippet == snippet.id,
+                                    onPick: { send(text: snippet.command, appendNewline: true) },
+                                    onRemove: { snippetStore.remove(id: snippet.id) }
+                                )
+                                .onHover { hoveredSnippet = $0 ? snippet.id : nil }
+                            case .make(let target):
+                                MakeTargetChip(
+                                    target: target,
+                                    hover: hoveredMake == target,
+                                    onPick: { send(text: "make \(target)", appendNewline: true) }
+                                )
+                                .onHover { hoveredMake = $0 ? target : nil }
+                            }
+                        }
+                        if orderedChips.isEmpty {
+                            Text(emptyHint)
+                                .font(.system(size: 11))
+                                .foregroundStyle(SwiftUI.Color.tnFg3)
+                        }
+                        Button {
+                            showAdd = true
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "plus").font(.system(size: 9, weight: .bold))
+                                Text(input.trimmingCharacters(in: .whitespaces).isEmpty ? "Save snippet" : "Save current")
+                                    .font(.system(size: 11))
+                            }
+                        }
+                        .buttonStyle(TideChipButton(tint: SwiftUI.Color.tnBlue))
+                        .help(input.trimmingCharacters(in: .whitespaces).isEmpty
+                              ? "Save a new snippet" : "Save current input as a snippet")
+                    }
+                    .padding(.horizontal, 2)
+                }
+                ServicesBarButton(showing: $showServices)
+                if let copied = copyFlash {
+                    HStack(spacing: 4) {
+                        Image(systemName: "doc.on.clipboard.fill")
+                            .font(.system(size: 9, weight: .bold))
+                        Text("Copied")
+                            .font(.system(size: 10, weight: .semibold))
+                    }
+                    .foregroundStyle(SwiftUI.Color.tnGreen)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Capsule().fill(SwiftUI.Color.tnGreen.opacity(0.15)))
+                    .overlay(Capsule().strokeBorder(SwiftUI.Color.tnGreen.opacity(0.4), lineWidth: 1))
+                    .transition(.opacity)
+                    .help("Copied: \(copied)")
+                }
+            }
+            .frame(maxHeight: rowVisible ? 28 : 0)
+            .opacity(rowVisible ? 1 : 0)
+            .animation(.easeInOut(duration: 0.15), value: copyFlash)
+
+            // Row 2 — input (⏎ send · ⇧⏎ newline)
+            HStack(alignment: .top, spacing: 8) {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(SwiftUI.Color.tnBlue)
+                    .padding(.top, 3)
 
-                TextField("Type command, ⏎ to send to active pane · ⌘L to focus", text: $input)
+                TextField("Type command · ⏎ send · ⇧⏎ newline · ⌘L focus",
+                          text: $input, axis: .vertical)
                     .textFieldStyle(.plain)
+                    .lineLimit(1...6)
                     .font(.system(size: 12, design: .monospaced))
                     .foregroundStyle(SwiftUI.Color.tnFg)
                     .focused($inputFocused)
-                    .onSubmit(sendInput)
+                    .onKeyPress(.return) {
+                        if NSEvent.modifierFlags.contains(.shift) {
+                            return .ignored                      // let TextField insert "\n"
+                        }
+                        sendInput()
+                        return .handled
+                    }
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 7)
@@ -84,10 +143,80 @@ struct SnippetsBar: View {
         }
     }
 
-    private var relevantSnippets: [Snippet] {
-        snippetStore.relevant(for: projectStore.selectedID)
+    private var effectiveScope: ChipScope {
+        projectStore.selected == nil ? .global : scope
     }
-    private var relevantCount: Int { relevantSnippets.count }
+
+    private var globalSnippets: [Snippet] {
+        snippetStore.snippets.filter { $0.isGlobal }
+    }
+
+    private var projectSnippets: [Snippet] {
+        guard let pid = projectStore.selectedID else { return [] }
+        return snippetStore.snippets.filter { $0.scopeProjectID == pid }
+    }
+
+    private var makeTargets: [String] {
+        guard let project = projectStore.selected else { return [] }
+        return MakeTargets.targets(forProjectPath: project.expandedPath)
+    }
+
+    private enum Chip {
+        case snippet(Snippet)
+        case make(String)
+
+        var key: String {
+            switch self {
+            case .snippet(let s): return "s:\(s.id.uuidString)"
+            case .make(let t):    return "m:\(t)"
+            }
+        }
+
+        var command: String {
+            switch self {
+            case .snippet(let s): return s.command
+            case .make(let t):    return "make \(t)"
+            }
+        }
+    }
+
+    private var orderedChips: [Chip] {
+        let chips: [Chip]
+        switch effectiveScope {
+        case .global:
+            chips = globalSnippets.map(Chip.snippet)
+        case .project:
+            let snippets = projectSnippets
+            // Don't duplicate make chip if user saved the same command as a project snippet.
+            let snippetCommands = Set(snippets.map { $0.command.trimmingCharacters(in: .whitespacesAndNewlines) })
+            let makeChips = makeTargets
+                .filter { !snippetCommands.contains("make \($0)") }
+                .map(Chip.make)
+            chips = snippets.map(Chip.snippet) + makeChips
+        }
+
+        return chips.sorted { lhs, rhs in
+            let l = commandUsage.priority(for: lhs.command)
+            let r = commandUsage.priority(for: rhs.command)
+            if l.count != r.count { return l.count > r.count }
+            if l.lastUsed != r.lastUsed { return l.lastUsed > r.lastUsed }
+            return lhs.command.localizedCaseInsensitiveCompare(rhs.command) == .orderedAscending
+        }
+    }
+
+    private var rowVisible: Bool {
+        !orderedChips.isEmpty || !input.isEmpty ||
+        !globalSnippets.isEmpty || !projectSnippets.isEmpty || !makeTargets.isEmpty
+    }
+
+    private var emptyHint: String {
+        switch effectiveScope {
+        case .global:  return "No global snippets yet."
+        case .project: return projectStore.selected == nil
+            ? "No project selected."
+            : "No project snippets or make targets."
+        }
+    }
 
     private func sendInput() {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -97,12 +226,25 @@ struct SnippetsBar: View {
     }
 
     private func send(text: String, appendNewline: Bool) {
-        guard let project = projectStore.selected else { return }
+        if let terminal = activeTerminal() {
+            terminal.send(txt: text + (appendNewline ? "\n" : ""))
+        } else {
+            let pb = NSPasteboard.general
+            pb.clearContents()
+            pb.setString(text, forType: .string)
+            copyFlash = text
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                if copyFlash == text { copyFlash = nil }
+            }
+        }
+        commandUsage.record(text)
+    }
+
+    private func activeTerminal() -> LocalProcessTerminalView? {
+        guard let project = projectStore.selected else { return nil }
         let session = projectStore.session(for: project)
-        guard let tab = session.activeTab else { return }
-        let leaf = tab.activeLeafID
-        guard let terminal = tab.terminals[leaf] else { return }
-        terminal.send(txt: text + (appendNewline ? "\n" : ""))
+        guard let tab = session.activeTab else { return nil }
+        return tab.terminals[tab.activeLeafID]
     }
 }
 
@@ -143,6 +285,118 @@ struct SnippetChip: View {
         .contentShape(Capsule())
         .onTapGesture(perform: onPick)
         .help(snippet.command)
+    }
+}
+
+struct ServicesBarButton: View {
+    @Environment(ServiceSupervisor.self) private var supervisor
+    @Binding var showing: Bool
+
+    var body: some View {
+        Button {
+            showing.toggle()
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "play.rectangle.on.rectangle.fill")
+                    .font(.system(size: 11, weight: .semibold))
+                Text(label)
+                    .font(.system(size: 11, weight: supervisor.runningCount > 0 ? .semibold : .regular))
+            }
+            .foregroundStyle(tint)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4)
+            .background(Capsule().fill(SwiftUI.Color.tnBg3))
+            .overlay(Capsule().strokeBorder(border, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .help(supervisor.runningCount > 0 ? "Services (\(supervisor.runningCount) running)" : "Services")
+        .popover(isPresented: $showing, arrowEdge: .bottom) {
+            ServicesPopover()
+        }
+    }
+
+    private var label: String {
+        supervisor.runningCount > 0 ? "Services · \(supervisor.runningCount)" : "Services"
+    }
+    private var tint: SwiftUI.Color {
+        supervisor.runningCount > 0 ? SwiftUI.Color.tnGreen : SwiftUI.Color.tnFg2
+    }
+    private var border: SwiftUI.Color {
+        supervisor.runningCount > 0 ? SwiftUI.Color.tnGreen.opacity(0.5) : SwiftUI.Color.tnLine
+    }
+}
+
+struct ScopeSwitch: View {
+    @Binding var scope: SnippetsBar.ChipScope
+    let projectAvailable: Bool
+
+    var body: some View {
+        HStack(spacing: 0) {
+            seg(.project)
+            seg(.global)
+        }
+        .padding(2)
+        .background(Capsule().fill(SwiftUI.Color.tnBg))
+        .overlay(Capsule().strokeBorder(SwiftUI.Color.tnLine, lineWidth: 1))
+    }
+
+    @ViewBuilder
+    private func seg(_ value: SnippetsBar.ChipScope) -> some View {
+        let active = scope == value
+        let disabled = value == .project && !projectAvailable
+        Button {
+            guard !disabled else { return }
+            scope = value
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: value.icon).font(.system(size: 9, weight: .semibold))
+                Text(value.label).font(.system(size: 10, weight: active ? .semibold : .regular))
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .foregroundStyle(
+                disabled ? SwiftUI.Color.tnFg3.opacity(0.5) :
+                (active ? SwiftUI.Color.white : SwiftUI.Color.tnFg2)
+            )
+            .background(Capsule().fill(active ? SwiftUI.Color.tnBlue : SwiftUI.Color.clear))
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
+        .help(value == .project ? "Show project snippets and make targets"
+                                : "Show global snippets")
+    }
+}
+
+struct MakeTargetChip: View {
+    let target: String
+    let hover: Bool
+    let onPick: () -> Void
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Text("make")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundStyle(SwiftUI.Color.tnOrange)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 1)
+                .background(Capsule().fill(SwiftUI.Color.tnOrange.opacity(0.15)))
+            Text(target)
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .foregroundStyle(SwiftUI.Color.tnFg2)
+                .lineLimit(1)
+        }
+        .padding(.leading, 5)
+        .padding(.trailing, 10)
+        .padding(.vertical, 3)
+        .background(
+            Capsule().fill(hover ? SwiftUI.Color.tnBg4 : SwiftUI.Color.tnBg3)
+        )
+        .overlay(
+            Capsule().strokeBorder(hover ? SwiftUI.Color.tnOrange : SwiftUI.Color.tnLine, lineWidth: 1)
+        )
+        .contentShape(Capsule())
+        .onTapGesture(perform: onPick)
+        .help("make \(target)")
     }
 }
 

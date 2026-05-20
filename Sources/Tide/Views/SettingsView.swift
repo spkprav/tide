@@ -54,9 +54,12 @@ struct ShellSettingsTab: View {
     @State private var bashInstalled: Bool = false
     @State private var loggedCount: Int = 0
     @State private var status: String = ""
+    @AppStorage("Tide.useTmuxBackend") private var useTmux: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            tmuxSection
+            Divider()
             Text("Shell Integration")
                 .font(.system(size: 14, weight: .semibold))
             Text("Tide can capture every command you run inside a pane and write it to ~/.tide/history/<pane>.log — bypassing zsh's HISTSIZE truncation. Tagged commands (`#tag`) become snippets via the Snippets tab.")
@@ -159,6 +162,55 @@ struct ShellSettingsTab: View {
         zshInstalled = TideShellIntegration.isInstalled(rc: TideShellIntegration.zshrcPath)
         bashInstalled = TideShellIntegration.isInstalled(rc: TideShellIntegration.bashrcPath)
         loggedCount = TideShellIntegration.totalLoggedCommands()
+    }
+
+    @ViewBuilder
+    private var tmuxSection: some View {
+        let tmuxPath = TmuxBackend.locate()
+        let available = tmuxPath != nil
+
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Persistent Panes")
+                .font(.system(size: 14, weight: .semibold))
+            Text("Back every pane with a tmux session so running processes (claude code, npm dev, rails server) survive when Tide quits or crashes. Reopen Tide → reattach to the same live session.")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 10) {
+                Image(systemName: available
+                      ? (useTmux ? "checkmark.seal.fill" : "circle.dashed")
+                      : "exclamationmark.triangle.fill")
+                    .foregroundStyle(available ? (useTmux ? .green : .orange) : .red)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(available
+                         ? (useTmux ? "Enabled — new panes use tmux" : "Available — currently off")
+                         : "tmux not installed")
+                        .font(.system(size: 12, weight: .semibold))
+                    if let p = tmuxPath {
+                        Text(p).font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(.tertiary)
+                    } else {
+                        Text("Install with: brew install tmux")
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(.tertiary)
+                            .textSelection(.enabled)
+                    }
+                }
+                Spacer()
+                Toggle("", isOn: $useTmux)
+                    .labelsHidden()
+                    .disabled(!available)
+            }
+            .padding(10)
+            .background(SwiftUI.Color.tnBg3, in: RoundedRectangle(cornerRadius: 6))
+
+            if useTmux {
+                Text("⚠ Existing panes keep their current shells. Close + reopen a pane to switch it to tmux.")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.orange)
+            }
+        }
     }
 }
 
@@ -542,10 +594,11 @@ struct AISettingsTab: View {
 
 struct StorageSettingsTab: View {
     private let entries: [(String, String)] = [
-        ("Projects",              "~/Library/Application Support/Tide/projects.json"),
-        ("Startup configs",       "~/Library/Application Support/Tide/startups.json"),
-        ("Snippets",              "~/Library/Application Support/Tide/snippets.json"),
-        ("Usage stats",           "~/Library/Application Support/Tide/usage.json"),
+        ("Projects",              TideStorage.displayPath("projects.json")),
+        ("Startup configs",       TideStorage.displayPath("startups.json")),
+        ("Services",              TideStorage.displayPath("services.json")),
+        ("Snippets",              TideStorage.displayPath("snippets.json")),
+        ("Usage stats",           TideStorage.displayPath("usage.json")),
         ("Notification watch",    "~/.tide/notify"),
         ("Claude settings",       "~/.claude/settings.json"),
     ]

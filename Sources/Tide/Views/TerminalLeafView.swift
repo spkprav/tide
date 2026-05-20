@@ -36,7 +36,13 @@ struct TerminalLeafView: View {
         .background(SwiftUI.Color.tnBg)
         .overlay(
             Rectangle()
-                .stroke(tab.activeLeafID == sessionID ? SwiftUI.Color.tnBlue : SwiftUI.Color.clear, lineWidth: 1)
+                .fill(SwiftUI.Color.black.opacity(tab.activeLeafID == sessionID ? 0 : 0.32))
+                .allowsHitTesting(false)
+                .animation(.easeOut(duration: 0.12), value: tab.activeLeafID)
+        )
+        .overlay(
+            Rectangle()
+                .stroke(tab.activeLeafID == sessionID ? SwiftUI.Color.tnBlue : SwiftUI.Color.clear, lineWidth: 2)
                 .allowsHitTesting(false)
         )
         .overlay(
@@ -459,6 +465,11 @@ struct TerminalRepresentable: NSViewRepresentable {
         terminal.frame = host.bounds
         host.addSubview(terminal)
         (host as? HostingNSView)?.resizeSubviewsNow()
+        // After re-parenting (e.g. zoom toggle), the buffer is intact but no
+        // cells are marked dirty for the new host. Force a full repaint so
+        // the pane isn't blank until the next byte of pty output arrives.
+        terminal.getTerminal().updateFullScreen()
+        terminal.needsDisplay = true
     }
 }
 
@@ -497,6 +508,11 @@ final class HostingNSView: NSView {
     func resizeSubviewsNow() {
         resizeWorkItem?.cancel()
         resizeWorkItem = nil
+        // Require at least ~10 cells × 4 rows of real layout before
+        // propagating resize. Tinier bounds are transient SwiftUI /
+        // animation frames; pushing them to the pty churns tmux with
+        // bogus WINCH events and pollutes the pane scrollback width.
+        guard bounds.width >= 80, bounds.height >= 40 else { return }
         for sub in subviews {
             sub.frame = bounds
         }

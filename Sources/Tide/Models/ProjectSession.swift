@@ -79,6 +79,7 @@ final class TabSession: Identifiable {
 
     @ObservationIgnored var terminals: [UUID: LocalProcessTerminalView] = [:]
     @ObservationIgnored var delegates: [UUID: TerminalDelegate] = [:]
+    @ObservationIgnored var leafCwds: [UUID: String] = [:]   // updated via OSC 7
     @ObservationIgnored let cwd: String
     @ObservationIgnored weak var session: ProjectSession?
 
@@ -120,8 +121,17 @@ final class TabSession: Identifiable {
 
     func terminal(for sessionID: UUID) -> LocalProcessTerminalView {
         if let t = terminals[sessionID] { return t }
-        let view = LocalProcessTerminalView(frame: .zero)
+        // Pre-size the view so SwiftTerm boots at sane cols/rows. With a
+        // .zero frame the pty would fork at ~2x1 and tmux's 200k-line
+        // scrollback gets written at 2-col width — tmux never reflows
+        // history, so scrolling back shows 1 char per line. After SwiftUI
+        // lays out the host, resize() brings cols/rows to actual size.
+        let view = LocalProcessTerminalView(
+            frame: CGRect(x: 0, y: 0, width: 1200, height: 700)
+        )
         view.applyTideTheme()
+        view.allowMouseReporting = false
+        TerminalScrollForwarder.install()
 
         let delegate = TerminalDelegate(session: session, sessionID: sessionID)
         delegates[sessionID] = delegate
@@ -132,8 +142,19 @@ final class TabSession: Identifiable {
         env.append("TIDE=1")
         env.append("TIDE_PANE_ID=\(sessionID.uuidString)")
         env.append("TIDE_NOTIFY_DIR=\(NotificationWatcher.notifyDir)")
-        let startCwd: String? = FileManager.default.fileExists(atPath: cwd) ? cwd : nil
-        view.startProcess(executable: shell, args: ["-l"], environment: env, execName: shell, currentDirectory: startCwd)
+        // Prefer the restored per-pane cwd (from a snapshot); fall back to the
+        // tab's project cwd. Verify the dir still exists before passing it.
+        let candidate = leafCwds[sessionID] ?? cwd
+        let startCwd: String? = FileManager.default.fileExists(atPath: candidate) ? candidate : nil
+
+        let useTmux = UserDefaults.standard.bool(forKey: "Tide.useTmuxBackend")
+        if useTmux, let tmuxPath = TmuxBackend.locate() {
+            TmuxBackend.ensureConfig()
+            let args = TmuxBackend.spawnArgs(paneID: sessionID, cwd: startCwd)
+            view.startProcess(executable: tmuxPath, args: args, environment: env, execName: "tmux", currentDirectory: startCwd)
+        } else {
+            view.startProcess(executable: shell, args: ["-l"], environment: env, execName: shell, currentDirectory: startCwd)
+        }
         view.getTerminal().changeHistorySize(100_000)
         terminals[sessionID] = view
         return view
@@ -188,10 +209,17 @@ final class TabSession: Identifiable {
     func closeLeaf(sessionID: UUID, sendExit: Bool = false) -> Bool {
         if sendExit, let term = terminals[sessionID] {
             killTerminalProcessTree(term)
+            // Explicit close = user wants this pane gone for good. Reap the
+            // backing tmux session too so it doesn't leak across restarts.
+            // (Detaching by quitting Tide deliberately leaves sessions alive.)
+            if UserDefaults.standard.bool(forKey: "Tide.useTmuxBackend") {
+                TmuxBackend.killSession(paneID: sessionID)
+            }
         }
         terminals.removeValue(forKey: sessionID)
         delegates.removeValue(forKey: sessionID)
         leafTitles.removeValue(forKey: sessionID)
+        leafCwds.removeValue(forKey: sessionID)
         if zoomedLeafID == sessionID { zoomedLeafID = nil }
         return removeLeafFromTree(sessionID: sessionID)
     }
@@ -628,6 +656,13 @@ final class ProjectSession {
         }
     }
 
+    func recordPaneCwd(sessionID: UUID, cwd: String) {
+        for tab in tabs where tab.terminals[sessionID] != nil {
+            tab.leafCwds[sessionID] = cwd
+            return
+        }
+    }
+
     func setTitleAnywhere(sessionID: UUID, title: String) {
         if let idx = hiddenPanes.firstIndex(where: { $0.id == sessionID }) {
             hiddenPanes[idx].title = title
@@ -741,7 +776,24 @@ final class TerminalDelegate: NSObject, @preconcurrency LocalProcessTerminalView
         }
     }
 
-    nonisolated func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}
+    func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {
+        // OSC 7 payload looks like file://host/path. Strip scheme + host so
+        // we end up with a plain filesystem path Swift can use.
+        guard let directory else { return }
+        let path: String
+        if let url = URL(string: directory), url.scheme == "file" {
+            path = url.path
+        } else if directory.hasPrefix("/") {
+            path = directory
+        } else {
+            return
+        }
+        let sid = sessionID
+        let s = session
+        Task { @MainActor in
+            s?.recordPaneCwd(sessionID: sid, cwd: path)
+        }
+    }
 
     func processTerminated(source: TerminalView, exitCode: Int32?) {
         let sid = sessionID
