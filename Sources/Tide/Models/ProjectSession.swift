@@ -64,6 +64,15 @@ final class SplitNode: Identifiable {
     static func makeLeaf() -> SplitNode {
         SplitNode(content: .leaf(sessionID: UUID()))
     }
+
+    func containsLeaf(_ leafID: UUID) -> Bool {
+        switch content {
+        case .leaf(let sid):
+            return sid == leafID
+        case .split(_, let children):
+            return children.contains { $0.containsLeaf(leafID) }
+        }
+    }
 }
 
 @Observable
@@ -126,7 +135,7 @@ final class TabSession: Identifiable {
         // scrollback gets written at 2-col width — tmux never reflows
         // history, so scrolling back shows 1 char per line. After SwiftUI
         // lays out the host, resize() brings cols/rows to actual size.
-        let view = LocalProcessTerminalView(
+        let view = TideTerminalView(
             frame: CGRect(x: 0, y: 0, width: 1200, height: 700)
         )
         view.applyTideTheme()
@@ -138,10 +147,18 @@ final class TabSession: Identifiable {
         view.processDelegate = delegate
 
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
-        var env = Terminal.getEnvironmentVariables(termName: "xterm-256color")
-        env.append("TIDE=1")
-        env.append("TIDE_PANE_ID=\(sessionID.uuidString)")
-        env.append("TIDE_NOTIFY_DIR=\(NotificationWatcher.notifyDir)")
+        // Start from the parent process env so SSH_AUTH_SOCK, EDITOR, XDG_*,
+        // and other launchd-provided vars propagate into the pane. SwiftTerm's
+        // Terminal.getEnvironmentVariables only forwards a fixed handful of
+        // keys and would strip the ssh-agent socket.
+        var envDict = ProcessInfo.processInfo.environment
+        envDict["TERM"] = "xterm-256color"
+        envDict["COLORTERM"] = "truecolor"
+        if envDict["LANG"] == nil { envDict["LANG"] = "en_US.UTF-8" }
+        envDict["TIDE"] = "1"
+        envDict["TIDE_PANE_ID"] = sessionID.uuidString
+        envDict["TIDE_NOTIFY_DIR"] = NotificationWatcher.notifyDir
+        let env = envDict.map { "\($0.key)=\($0.value)" }
         // Prefer the restored per-pane cwd (from a snapshot); fall back to the
         // tab's project cwd. Verify the dir still exists before passing it.
         let candidate = leafCwds[sessionID] ?? cwd

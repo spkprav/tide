@@ -461,15 +461,42 @@ struct TerminalRepresentable: NSViewRepresentable {
         if terminal.superview === host { return }
         terminal.removeFromSuperview()
         terminal.translatesAutoresizingMaskIntoConstraints = true
-        terminal.autoresizingMask = []
-        terminal.frame = host.bounds
+        terminal.autoresizingMask = [.width, .height]
+        // Only push host bounds into the terminal if they're sane. .zero /
+        // tiny bounds are SwiftUI's pre-layout state; assigning them
+        // collapses SwiftTerm to cols=2 rows=1 and tmux records its
+        // 200k-line history at that width. The layout-driven resize via
+        // HostingNSView.setFrameSize will fire shortly with real bounds.
+        let bounds = host.bounds
+        let sane = bounds.width >= 80 && bounds.height >= 40
+        if sane {
+            terminal.frame = bounds
+        }
         host.addSubview(terminal)
-        (host as? HostingNSView)?.resizeSubviewsNow()
-        // After re-parenting (e.g. zoom toggle), the buffer is intact but no
-        // cells are marked dirty for the new host. Force a full repaint so
-        // the pane isn't blank until the next byte of pty output arrives.
-        terminal.getTerminal().updateFullScreen()
-        terminal.needsDisplay = true
+        if sane {
+            (host as? HostingNSView)?.resizeSubviewsNow()
+        }
+        // Defer redraw until after SwiftUI's layout pass — synchronous
+        // updateFullScreen here would mark cells dirty on a .zero frame
+        // (pre-layout state for every fresh HostingNSView) and the buffer
+        // would never repaint. Mirrors HiddenTerminalRepresentable, which
+        // survives the same reparent dance without blanking.
+        DispatchQueue.main.async { [weak terminal, weak host] in
+            guard let terminal, let host else { return }
+            let size = host.bounds.size
+            if size.width >= 80 && size.height >= 40 {
+                terminal.setFrameSize(size)
+            }
+            terminal.getTerminal().updateFullScreen()
+            terminal.needsDisplay = true
+            terminal.displayIfNeeded()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak terminal] in
+                guard let terminal else { return }
+                terminal.getTerminal().updateFullScreen()
+                terminal.needsDisplay = true
+                terminal.displayIfNeeded()
+            }
+        }
     }
 }
 

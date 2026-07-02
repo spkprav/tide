@@ -18,13 +18,14 @@ struct TerminalAreaView: View {
                     } else if session.activeTabID == DASHBOARD_TAB_ID {
                         ProjectDashboardView(project: project)
                     } else if let tab = session.activeTab {
-                        if let zoomedSid = tab.zoomedLeafID {
-                            TerminalLeafView(sessionID: zoomedSid, tab: tab)
-                                .id("\(tab.id)-zoom-\(zoomedSid)")
-                        } else {
-                            SplitContainerView(node: tab.root, tab: tab)
-                                .id(tab.id)
-                        }
+                        // Always render the split tree. Zoom is implemented by
+                        // hiding sibling NSSplitView subviews so the persistent
+                        // SwiftTerm NSViews stay mounted across zoom toggle —
+                        // see TideSplitView.applyZoom. Switching SwiftUI
+                        // subtrees via .id() used to tear down the terminal
+                        // hosting view and leave the zoomed pane blank.
+                        SplitContainerView(node: tab.root, tab: tab)
+                            .id(tab.id)
                     } else {
                         Color.black
                     }
@@ -91,11 +92,17 @@ struct SplitContainerView: View {
             // divider positions and absorb a closed pane's space into the
             // adjacent neighbor. Children are tagged by SplitNode.id so the
             // hosting views (and their terminals) are reused across diffs.
+            // zoomedChildIndex collapses non-on-path siblings to zero when
+            // a descendant leaf is zoomed.
+            let zoomedIdx: Int? = tab.zoomedLeafID.flatMap { zid in
+                children.firstIndex { $0.containsLeaf(zid) }
+            }
             TideSplitView(
                 axis: axis,
                 childIDs: children.map(\.id),
                 initialFractions: tab.fractions(for: node, childCount: children.count),
                 minimumChildSize: axis == .vertical ? 80 : 60,
+                zoomedChildIndex: zoomedIdx,
                 onResize: { fractions in tab.setFractions(fractions, for: node) },
                 makeChild: { idx in
                     SplitContainerView(node: children[idx], tab: tab)

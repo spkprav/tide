@@ -1,4 +1,5 @@
 import SwiftUI
+import Darwin
 
 @main
 struct TideApp: App {
@@ -15,10 +16,28 @@ struct TideApp: App {
     @State private var snapshotTimer: Timer?
 
     init() {
+        Self.raiseFileDescriptorLimit()
         NSWindow.allowsAutomaticWindowTabbing = false
         let svcStore = ServiceStore()
         _serviceStore = State(initialValue: svcStore)
         _serviceSupervisor = State(initialValue: ServiceSupervisor(store: svcStore))
+    }
+
+    // Raise RLIMIT_NOFILE so shells we spawn inside panes don't inherit the
+    // 256-fd launchd default. Tools like the Claude CLI open hundreds of
+    // handles at startup (MCP servers, agent definitions, sockets) and hit
+    // the cap immediately. Terminal.app / iTerm bump this for the same
+    // reason — we match what they do.
+    private static func raiseFileDescriptorLimit() {
+        var limit = rlimit(rlim_cur: 0, rlim_max: 0)
+        guard getrlimit(RLIMIT_NOFILE, &limit) == 0 else { return }
+        let target: rlim_t = 65536
+        // Cap by hard limit if it's a sane positive value; otherwise just
+        // request target and let setrlimit clamp.
+        let newSoft = limit.rlim_max > 0 ? min(target, limit.rlim_max) : target
+        if limit.rlim_cur >= newSoft { return }
+        limit.rlim_cur = newSoft
+        _ = setrlimit(RLIMIT_NOFILE, &limit)
     }
 
     var body: some Scene {
@@ -108,6 +127,12 @@ struct TideApp: App {
                 }
                 .keyboardShortcut("l", modifiers: .command)
             }
+            CommandGroup(after: .sidebar) {
+                Button("Toggle Sidebar") {
+                    NotificationCenter.default.post(name: .toggleSidebar, object: nil)
+                }
+                .keyboardShortcut("s", modifiers: [.command, .control])
+            }
         }
     }
 }
@@ -116,6 +141,7 @@ extension Notification.Name {
     static let splitVertical   = Notification.Name("Tide.splitVertical")
     static let splitHorizontal = Notification.Name("Tide.splitHorizontal")
     static let closePane       = Notification.Name("Tide.closePane")
+    static let toggleSidebar   = Notification.Name("Tide.toggleSidebar")
 }
 
 extension TideApp {

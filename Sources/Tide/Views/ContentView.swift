@@ -8,29 +8,27 @@ struct ContentView: View {
     @Environment(WaitingPaneStore.self) private var waiters
     @Environment(\.scenePhase) private var scenePhase
     @State private var clickMonitor: Any?
+    @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
 
     var body: some View {
         @Bindable var store = store
         VStack(spacing: 0) {
             RestoreSessionBanner()
-            NavigationSplitView {
+            NavigationSplitView(columnVisibility: $columnVisibility) {
                 SidebarView()
                     .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 360)
             } detail: {
-                if store.selectedID == OVERVIEW_ID {
-                    OverviewView()
-                } else if store.selectedID == STATS_ID {
-                    StatsView()
-                } else if store.selectedID == ACTIVE_SESSIONS_ID {
-                    ActiveSessionsView()
-                } else if store.selectedID == NOTIFICATIONS_ID {
-                    NotificationsView()
-                } else if let project = store.selected {
-                    TerminalAreaView(project: project)
-                        .id(project.id)
-                } else {
-                    EmptyStateView()
-                }
+                detailContent
+                    .toolbar {
+                        if columnVisibility == .detailOnly {
+                            ToolbarItem(placement: .principal) {
+                                TopBarChipsRow()
+                            }
+                            ToolbarItemGroup(placement: .primaryAction) {
+                                TopBarActions()
+                            }
+                        }
+                    }
             }
             .navigationSplitViewStyle(.balanced)
 
@@ -49,9 +47,32 @@ struct ContentView: View {
         .onChange(of: scenePhase) { _, newPhase in
             updateFocus(phase: newPhase, id: store.selectedID)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .toggleSidebar)) { _ in
+            withAnimation(.easeInOut(duration: 0.18)) {
+                columnVisibility = (columnVisibility == .detailOnly) ? .all : .detailOnly
+            }
+        }
         .onDisappear {
             tracker.flush()
             removeClickMonitor()
+        }
+    }
+
+    @ViewBuilder
+    private var detailContent: some View {
+        if store.selectedID == OVERVIEW_ID {
+            OverviewView()
+        } else if store.selectedID == STATS_ID {
+            StatsView()
+        } else if store.selectedID == ACTIVE_SESSIONS_ID {
+            ActiveSessionsView()
+        } else if store.selectedID == NOTIFICATIONS_ID {
+            NotificationsView()
+        } else if let project = store.selected {
+            TerminalAreaView(project: project)
+                .id(project.id)
+        } else {
+            EmptyStateView()
         }
     }
 

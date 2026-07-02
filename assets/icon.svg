@@ -18,93 +18,116 @@
       <stop offset="0" stop-color="#BB9AF7"/>
       <stop offset="1" stop-color="#5A4AB0"/>
     </linearGradient>
-    <radialGradient id="moonGlow" cx="0.7" cy="0.3" r="0.4">
-      <stop offset="0" stop-color="#F7D794" stop-opacity="0.5"/>
-      <stop offset="0.55" stop-color="#F7D794" stop-opacity="0.08"/>
+    <radialGradient id="promptGlow" cx="0.72" cy="0.3" r="0.42">
+      <stop offset="0" stop-color="#F7D794" stop-opacity="0.6"/>
+      <stop offset="0.5" stop-color="#F7D794" stop-opacity="0.10"/>
       <stop offset="1" stop-color="#F7D794" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="moonFill" cx="0.45" cy="0.4" r="0.7">
-      <stop offset="0" stop-color="#FCE9B5"/>
-      <stop offset="0.7" stop-color="#F7D794"/>
+    <linearGradient id="promptFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF1C6"/>
+      <stop offset="0.55" stop-color="#F7D794"/>
       <stop offset="1" stop-color="#E0B864"/>
-    </radialGradient>
-    <clipPath id="clipCircle">
-      <circle cx="512" cy="512" r="450"/>
+    </linearGradient>
+    <filter id="promptSoftGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <clipPath id="clipApp">
+      <rect x="32" y="32" width="960" height="960" rx="216"/>
     </clipPath>
   </defs>
 
-  <!-- Base circle fill -->
-  <circle cx="512" cy="512" r="450" fill="url(#bg)"/>
+  <rect x="32" y="32" width="960" height="960" rx="216" fill="url(#bg)"/>
 
-  <!-- All content clipped inside circle -->
-  <g clip-path="url(#clipCircle)">
-    <!-- Moon glow -->
-    <rect x="0" y="0" width="1024" height="1024" fill="url(#moonGlow)"/>
+  <g clip-path="url(#clipApp)">
+    <!-- Warm halo (the "moonlight" of the prompt) -->
+    <rect x="0" y="0" width="1024" height="1024" fill="url(#promptGlow)"/>
 
     <!-- Stars -->
-    <circle cx="200" cy="200" r="2.5" fill="#C0CAF5" opacity="0.75"/>
-    <circle cx="320" cy="160" r="1.8" fill="#C0CAF5" opacity="0.55"/>
-    <circle cx="450" cy="220" r="2.2" fill="#C0CAF5" opacity="0.65"/>
+    <circle cx="160" cy="200" r="2.6" fill="#C0CAF5" opacity="0.78"/>
+    <circle cx="260" cy="160" r="1.8" fill="#C0CAF5" opacity="0.55"/>
+    <circle cx="380" cy="220" r="2.3" fill="#C0CAF5" opacity="0.66"/>
     <circle cx="180" cy="320" r="1.8" fill="#C0CAF5" opacity="0.5"/>
-    <circle cx="380" cy="380" r="2.6" fill="#C0CAF5" opacity="0.7"/>
-    <circle cx="540" cy="160" r="1.6" fill="#C0CAF5" opacity="0.5"/>
-    <circle cx="860" cy="200" r="2" fill="#C0CAF5" opacity="0.6"/>
+    <circle cx="320" cy="380" r="2.6" fill="#C0CAF5" opacity="0.7"/>
+    <circle cx="460" cy="160" r="1.6" fill="#C0CAF5" opacity="0.5"/>
+    <circle cx="540" cy="300" r="2"   fill="#C0CAF5" opacity="0.55"/>
+    <circle cx="200" cy="460" r="1.6" fill="#C0CAF5" opacity="0.45"/>
+    <circle cx="420" cy="440" r="2"   fill="#C0CAF5" opacity="0.55"/>
+    <circle cx="900" cy="160" r="1.8" fill="#C0CAF5" opacity="0.55"/>
 
-    <!-- Moon -->
-    <circle cx="720" cy="290" r="64" fill="url(#moonFill)"/>
-    <circle cx="700" cy="278" r="9" fill="#E0B864" opacity="0.6"/>
-    <circle cx="735" cy="305" r="6" fill="#E0B864" opacity="0.5"/>
-    <circle cx="715" cy="320" r="4" fill="#E0B864" opacity="0.4"/>
+    <!-- The "prompt moon": glowing `>` chevron + cursor block -->
+    <g filter="url(#promptSoftGlow)">
+      <!-- Chevron -->
+      <path d="M 660 220 L 760 312 L 660 404"
+            stroke="url(#promptFill)" stroke-width="44"
+            stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <!-- Cursor block -->
+      <rect x="790" y="276" width="44" height="72" rx="6"
+            fill="url(#promptFill)"/>
+    </g>
+    <!-- Inner highlight on cursor for "lit" feel -->
+    <rect x="790" y="276" width="44" height="32" rx="6"
+          fill="#FFF6D5" opacity="0.45"/>
 
-    <!-- Horizon faint -->
-    <rect x="0" y="540" width="1024" height="1.5" fill="#414868" opacity="0.45"/>
+    <!-- Faint horizon -->
+    <rect x="0" y="560" width="1024" height="1.5" fill="#414868" opacity="0.45"/>
 
     <!-- Back wave (purple) -->
-    <path d="M -50 600
-             C 160 530, 320 680, 480 600
-             S 800 680, 1100 580
+    <path d="M -50 620
+             C 160 550, 320 700, 480 620
+             S 800 700, 1100 600
              L 1100 1080 L -50 1080 Z"
-          fill="url(#wave3)" opacity="0.60"/>
+          fill="url(#wave3)" opacity="0.62"/>
 
     <!-- Mid wave (teal) -->
-    <path d="M -50 720
-             C 180 640, 360 800, 540 700
-             S 880 800, 1100 720
+    <path d="M -50 740
+             C 180 660, 360 820, 540 720
+             S 880 820, 1100 740
              L 1100 1080 L -50 1080 Z"
-          fill="url(#wave2)" opacity="0.82"/>
+          fill="url(#wave2)" opacity="0.85"/>
 
-    <!-- Front wave -->
-    <path d="M -50 840
-             C 180 750, 380 920, 580 810
-             S 880 920, 1100 830
+    <!-- Front wave (blue) -->
+    <path d="M -50 860
+             C 180 770, 380 940, 580 830
+             S 880 940, 1100 850
              L 1100 1080 L -50 1080 Z"
           fill="url(#wave1)"/>
 
     <!-- Crest highlights -->
-    <path d="M -50 840
-             C 180 750, 380 920, 580 810
-             S 880 920, 1100 830"
-          fill="none" stroke="#C0CAF5" stroke-width="5" stroke-linecap="round" opacity="0.55"/>
-    <path d="M -50 720
-             C 180 640, 360 800, 540 700
-             S 880 800, 1100 720"
-          fill="none" stroke="#9ECE6A" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+    <path d="M -50 860
+             C 180 770, 380 940, 580 830
+             S 880 940, 1100 850"
+          fill="none" stroke="#C0CAF5" stroke-width="5"
+          stroke-linecap="round" opacity="0.55"/>
+    <path d="M -50 740
+             C 180 660, 360 820, 540 720
+             S 880 820, 1100 740"
+          fill="none" stroke="#9ECE6A" stroke-width="2.5"
+          stroke-linecap="round" opacity="0.45"/>
 
     <!-- Foam dots -->
-    <circle cx="240" cy="800" r="6" fill="#C0CAF5" opacity="0.85"/>
-    <circle cx="320" cy="850" r="4" fill="#C0CAF5" opacity="0.7"/>
-    <circle cx="640" cy="800" r="5" fill="#C0CAF5" opacity="0.8"/>
-    <circle cx="780" cy="860" r="4" fill="#C0CAF5" opacity="0.7"/>
-    <circle cx="900" cy="830" r="6" fill="#C0CAF5" opacity="0.85"/>
-    <circle cx="120" cy="860" r="3.5" fill="#C0CAF5" opacity="0.6"/>
+    <circle cx="260" cy="820" r="6"   fill="#C0CAF5" opacity="0.85"/>
+    <circle cx="340" cy="870" r="4"   fill="#C0CAF5" opacity="0.7"/>
+    <circle cx="660" cy="820" r="5"   fill="#C0CAF5" opacity="0.8"/>
+    <circle cx="800" cy="880" r="4"   fill="#C0CAF5" opacity="0.7"/>
+    <circle cx="900" cy="850" r="6"   fill="#C0CAF5" opacity="0.85"/>
+    <circle cx="140" cy="880" r="3.5" fill="#C0CAF5" opacity="0.6"/>
 
-    <!-- Moon reflection on water -->
-    <ellipse cx="720" cy="855" rx="48" ry="6" fill="#F7D794" opacity="0.32"/>
-    <ellipse cx="720" cy="868" rx="34" ry="3" fill="#F7D794" opacity="0.22"/>
-    <ellipse cx="720" cy="880" rx="22" ry="2" fill="#F7D794" opacity="0.15"/>
+    <!-- Prompt reflection on water (shimmer bars, warm) -->
+    <rect x="690" y="870" width="148" height="9" rx="4"
+          fill="#F7D794" opacity="0.34"/>
+    <rect x="708" y="886" width="116" height="6" rx="3"
+          fill="#F7D794" opacity="0.24"/>
+    <rect x="724" y="900" width="86"  height="4" rx="2"
+          fill="#F7D794" opacity="0.16"/>
   </g>
 
-  <!-- Outer ring -->
-  <circle cx="512" cy="512" r="450" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.08"/>
-  <circle cx="512" cy="512" r="448" fill="none" stroke="#000000" stroke-width="1" opacity="0.25"/>
+  <!-- Outer rim highlights -->
+  <rect x="32" y="32" width="960" height="960" rx="216"
+        fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.10"/>
+  <rect x="33" y="33" width="958" height="958" rx="215"
+        fill="none" stroke="#000000" stroke-width="1" opacity="0.30"/>
 </svg>

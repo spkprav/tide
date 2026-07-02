@@ -13,6 +13,7 @@ struct TideSplitView<Child: View>: NSViewRepresentable {
     let childIDs: [UUID]
     let initialFractions: [CGFloat]
     let minimumChildSize: CGFloat
+    let zoomedChildIndex: Int?
     let onResize: ([CGFloat]) -> Void
     let makeChild: (Int) -> Child
 
@@ -21,6 +22,7 @@ struct TideSplitView<Child: View>: NSViewRepresentable {
         childIDs: [UUID],
         initialFractions: [CGFloat],
         minimumChildSize: CGFloat,
+        zoomedChildIndex: Int? = nil,
         onResize: @escaping ([CGFloat]) -> Void,
         @ViewBuilder makeChild: @escaping (Int) -> Child
     ) {
@@ -28,6 +30,7 @@ struct TideSplitView<Child: View>: NSViewRepresentable {
         self.childIDs = childIDs
         self.initialFractions = initialFractions
         self.minimumChildSize = minimumChildSize
+        self.zoomedChildIndex = zoomedChildIndex
         self.onResize = onResize
         self.makeChild = makeChild
     }
@@ -55,7 +58,32 @@ struct TideSplitView<Child: View>: NSViewRepresentable {
         }
 
         diffChildren(in: split, ids: childIDs, coordinator: context.coordinator)
-        context.coordinator.applyFractions(initialFractions, in: split)
+        applyZoom(in: split, coordinator: context.coordinator)
+    }
+
+    private func applyZoom(in split: TideNSSplitView, coordinator: Coordinator) {
+        let subs = split.arrangedSubviews
+        coordinator.isZoomed = (zoomedChildIndex != nil)
+        if let zi = zoomedChildIndex, zi >= 0, zi < subs.count {
+            coordinator.suppressWriteback = true
+            for (i, sub) in subs.enumerated() {
+                sub.isHidden = (i != zi)
+            }
+            split.adjustSubviews()
+            coordinator.suppressWriteback = false
+        } else {
+            var needsRelayout = false
+            for sub in subs where sub.isHidden {
+                sub.isHidden = false
+                needsRelayout = true
+            }
+            if needsRelayout {
+                coordinator.suppressWriteback = true
+                split.adjustSubviews()
+                coordinator.suppressWriteback = false
+            }
+            coordinator.applyFractions(initialFractions, in: split)
+        }
     }
 
     func makeCoordinator() -> Coordinator {
@@ -123,6 +151,7 @@ struct TideSplitView<Child: View>: NSViewRepresentable {
         var minimumChildSize: CGFloat
         weak var split: NSSplitView?
         var suppressWriteback = false
+        var isZoomed = false
         private var pendingFractions: [CGFloat]?
 
         init(onResize: @escaping ([CGFloat]) -> Void, minimumChildSize: CGFloat) {
@@ -164,8 +193,9 @@ struct TideSplitView<Child: View>: NSViewRepresentable {
         }
 
         // Per-subview minimum: each subview must be at least minimumChildSize.
+        // Hidden subviews (zoom mode) opt out so the visible pane can take the
+        // entire span.
         func splitView(_ splitView: NSSplitView, constrainMinCoordinate proposedMinimumPosition: CGFloat, ofSubviewAt dividerIndex: Int) -> CGFloat {
-            // Divider can't go before previous subview's min edge.
             let subviews = splitView.arrangedSubviews
             guard dividerIndex < subviews.count else { return proposedMinimumPosition }
             let priorEdge: CGFloat
@@ -175,23 +205,29 @@ struct TideSplitView<Child: View>: NSViewRepresentable {
                 let prior = subviews[dividerIndex - 1].frame
                 priorEdge = splitView.isVertical ? prior.minX : prior.minY
             }
-            return priorEdge + minimumChildSize
+            let reserve = subviews[dividerIndex].isHidden ? 0 : minimumChildSize
+            return priorEdge + reserve
         }
 
         func splitView(_ splitView: NSSplitView, constrainMaxCoordinate proposedMaximumPosition: CGFloat, ofSubviewAt dividerIndex: Int) -> CGFloat {
-            // Leave room for remaining subviews after this divider.
+            // Leave room for remaining non-hidden subviews after this divider.
             let subviews = splitView.arrangedSubviews
-            let trailingCount = subviews.count - (dividerIndex + 1)
-            guard trailingCount > 0 else { return proposedMaximumPosition }
+            let trailing = subviews.dropFirst(dividerIndex + 1)
+            let visibleTrailing = trailing.filter { !$0.isHidden }.count
+            guard visibleTrailing > 0 else { return proposedMaximumPosition }
             let dividerThickness = splitView.dividerThickness
             let total = splitView.isVertical ? splitView.bounds.width : splitView.bounds.height
-            let reserved = minimumChildSize * CGFloat(trailingCount) + dividerThickness * CGFloat(trailingCount)
+            let reserved = minimumChildSize * CGFloat(visibleTrailing) + dividerThickness * CGFloat(visibleTrailing)
             return min(proposedMaximumPosition, total - reserved)
         }
 
         // Window-resize / drag: writes back current fractions.
         func splitViewDidResizeSubviews(_ notification: Notification) {
             guard !suppressWriteback, let split else { return }
+            // Don't overwrite saved fractions while a child is zoomed — the
+            // 1.0/0.0 layout is transient and would clobber the user's
+            // pre-zoom proportions.
+            if isZoomed { return }
             // If we had pending fractions waiting on first layout, apply now.
             if let p = pendingFractions {
                 applyFractions(p, in: split)

@@ -27,6 +27,9 @@ struct SidebarView: View {
                         .listRowBackground(SwiftUI.Color.clear)
                         .contextMenu {
                             Button("Edit…") { editing = project }
+                            Button("Open in Editor") {
+                                EditorLauncher.open(project.expandedPath)
+                            }
                             Button("Reveal in Finder") {
                                 NSWorkspace.shared.open(URL(fileURLWithPath: project.expandedPath))
                             }
@@ -184,6 +187,7 @@ struct SidebarRow: View {
     let project: Project
     var isSelected: Bool = false
     @AppStorage("tide.sidebar.showProjectPath") private var showPath: Bool = true
+    @State private var editorHover = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -209,6 +213,23 @@ struct SidebarRow: View {
                         .truncationMode(.middle)
                 }
             }
+            Spacer(minLength: 4)
+            Button {
+                EditorLauncher.open(project.expandedPath)
+            } label: {
+                Image(systemName: "chevron.left.forwardslash.chevron.right")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(editorHover ? SwiftUI.Color.tnGreen : SwiftUI.Color.tnFg3)
+                    .frame(width: 20, height: 20)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(editorHover ? SwiftUI.Color.tnGreen.opacity(0.12) : SwiftUI.Color.clear)
+                    )
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Open in editor")
+            .onHover { editorHover = $0 }
         }
         .padding(.vertical, 2)
     }
